@@ -1,5 +1,8 @@
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <unistd.h>
+#include <stdlib.h>
+#include <sys/wait.h>
 
 #define MAX_BUFFER_SIZE 1024
 
@@ -76,6 +79,11 @@ void sbustrncpy(char* dest, char* src, int len)
    }
 }
 
+void sbusplit(char* buf, char** args)
+{
+   
+}
+
 int runcmd(char *buf)
 {
    char *c = buf;
@@ -146,11 +154,21 @@ int runcmd(char *buf)
    else
    {
       char *args[] = {"ls", NULL};
-      char *env[] = {"PATH=/bin", NULL};
+      char *env[] = {NULL};
+      int   status;
+      int   pid = fork();
 
-      if (!execvpe(args[0], args, env))
+      if (pid == 0)
       {
-         printError("error - invalid command/unable to execute\n");
+         if (!execvpe(args[0], args, env))
+         {
+            printError("error - invalid command/unable to execute\n");
+         }
+      } 
+      else
+      {
+         waitpid(pid, &status, 0);
+         printf("status = %d\n", status);
       }
 
       //printf("invalid command\n");
@@ -162,15 +180,27 @@ int runcmd(char *buf)
 
 int main(int argc, char *argv[], char *envp[]) {
    char  buffer[MAX_BUFFER_SIZE];
+   char *c;
 
    while(1)
    {
       printMessage("sbush> ");
-      if (!gets(buffer))
+
+      /* fgets stores '\n' AND '\0' at the end of the buffer unlike
+       * gets which stores only '\0'. So, we find '\n' and replace
+       * it with '\0' before starting to process to make our lives easier.
+       */
+      if (!fgets(buffer, MAX_BUFFER_SIZE, stdin))
       {
          printError("Unable to process input");
       }
 
+      c = buffer;
+      /* We are assuming we WILL have new line */
+      while (*c != '\n')
+         c++;
+      *c = '\0';
+      
       if (runcmd(buffer))
       {
          break;
