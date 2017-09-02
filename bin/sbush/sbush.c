@@ -5,12 +5,8 @@
 #include <sys/wait.h>
 
 #define MAX_BUFFER_SIZE 1024
-
-
-void printError(char *str)
-{
-   fputs(str, stdout);
-}
+#define MAX_ARG_COUNT 100
+#define MAX_ARG_SIZE 1000
 
 void printMessage(char *str)
 {
@@ -21,6 +17,11 @@ void printLine(char* str)
 {
    printMessage(str);
    printMessage("\n");
+}
+
+void printError(char *str)
+{
+   printLine(str);
 }
 
 int sbustrncmp(char *str1, char *str2, int size)
@@ -79,9 +80,44 @@ void sbustrncpy(char* dest, char* src, int len)
    }
 }
 
-void sbusplit(char* buf, char** args)
+/********************** sbusplit ************************/
+/* sbusplit - This function splits the input buffer with space the delimiter.
+ *
+ * Arguments :
+ * buf  - input string
+ * args - the output set of strings
+ * Returns the number of arguments
+ */
+int sbusplit(char* buf, char args[][MAX_ARG_SIZE])
 {
-   
+   char  *c = buf;
+   char  *ch;
+   int    argcnt = 0;
+   int    i;
+   char  *argstart, *argend;
+ 
+   while (*c)
+   {
+      while (*c == ' ' || *c == '\t')
+         c++;
+      argstart = c;
+
+      while (*c != ' ' && *c != '\t' && *c != '\0')
+         c++;
+      argend = c;
+
+      for (i=0, ch = argstart; ch < argend; ch++, i++)
+         args[argcnt][i] = *ch;
+      args[argcnt][i] = '\0';
+
+      argcnt++;
+      if (argcnt >= MAX_ARG_COUNT)
+      {
+         printError("error - too many arguments");
+         break;
+      }
+   }
+   return argcnt;
 }
 
 int runcmd(char *buf)
@@ -138,7 +174,7 @@ int runcmd(char *buf)
          c++;
       pathstart = c;
 
-      while ( *c != ' ' && *c != '\0')
+      while ( *c != ' ' && *c != '\t' && *c != '\0')
          c++;
       pathend = c;
 
@@ -148,27 +184,37 @@ int runcmd(char *buf)
    
       if (chdir(path))
       {
-         printError("error - unable to change directory\n");
+         printError("error - unable to change directory");
       } 
    }
    else
    {
-      char *args[] = {"ls", NULL};
+      char *args[MAX_ARG_COUNT];
+      char  argscontent[MAX_ARG_COUNT][MAX_ARG_SIZE];
       char *env[] = {NULL};
       int   status;
+      int   argcount;
       int   pid = fork();
-
+      int   i;
+      
       if (pid == 0)
       {
+         argcount = sbusplit(c, argscontent);
+         for (i = 0;i < argcount;i++)
+            args[i] = argscontent[i];
+         args[argcount] = NULL;
+
          if (!execvpe(args[0], args, env))
          {
             printError("error - invalid command/unable to execute\n");
          }
+ 
+         printError("error - unable to execute");
+         exit(1);
       } 
       else
       {
          waitpid(pid, &status, 0);
-         printf("status = %d\n", status);
       }
 
       //printf("invalid command\n");
@@ -181,7 +227,6 @@ int runcmd(char *buf)
 int main(int argc, char *argv[], char *envp[]) {
    char  buffer[MAX_BUFFER_SIZE];
    char *c;
-
    while(1)
    {
       printMessage("sbush> ");
@@ -189,6 +234,8 @@ int main(int argc, char *argv[], char *envp[]) {
       /* fgets stores '\n' AND '\0' at the end of the buffer unlike
        * gets which stores only '\0'. So, we find '\n' and replace
        * it with '\0' before starting to process to make our lives easier.
+       * We are going back and forth between fgets and gets. You may
+       * have to uncomment the following code.
        */
       if (!fgets(buffer, MAX_BUFFER_SIZE, stdin))
       {
@@ -200,7 +247,7 @@ int main(int argc, char *argv[], char *envp[]) {
       while (*c != '\n')
          c++;
       *c = '\0';
-      
+
       if (runcmd(buffer))
       {
          break;
