@@ -82,6 +82,7 @@ void sbustrncpy(char* dest, char* src, int len)
 
 /********************** sbusplit ************************/
 /* sbusplit - This function splits the input buffer with space the delimiter.
+      printf("New env %s\n", getenv("PATH"));
  *
  * Arguments :
  * buf  - input string
@@ -96,7 +97,7 @@ int sbusplit(char* buf, char args[][MAX_ARG_SIZE])
    int    i;
    char  *argstart, *argend;
  
-   while (*c)
+   while (*c != '\0')
    {
       while (*c == ' ' || *c == '\t')
          c++;
@@ -135,7 +136,8 @@ int runcmd(char *buf)
       return 0;
    }
 
-   if (iscmd(c, "pwd"))
+   if ((iscmd(c, "pwd") && !*(c+3))||
+        iscmd(c, "pwd "))
    {
       char cwd[MAX_BUFFER_SIZE];
       if (getcwd(cwd, sizeof(cwd)))
@@ -154,7 +156,7 @@ int runcmd(char *buf)
    {
       return 1; 
    }
-   else if (iscmd(c, "cd"))
+   else if (iscmd(c, "cd "))
    {
       char *pathstart;
       char *pathend;
@@ -169,7 +171,7 @@ int runcmd(char *buf)
        *    Mark it as pathend
        * 3. Copy [pathstart, pathend) to 'path' array. Now call chdir
        */
-      c += sbustrlen("cd");
+      c += sbustrlen("cd ");
       while ( *c == ' ' || *c == '\t')
          c++;
       pathstart = c;
@@ -186,24 +188,46 @@ int runcmd(char *buf)
       {
          printError("error - unable to change directory");
       } 
+   }  
+   else if (iscmd(c, "export "))
+   {
+      c += sbustrlen("export ");
+      if (putenv(c))
+      {
+         printError("error - unable to set environment variable");
+      }
    }
    else
    {
       char *args[MAX_ARG_COUNT];
       char  argscontent[MAX_ARG_COUNT][MAX_ARG_SIZE];
       char *env[] = {NULL};
+      int   background = 0;
       int   status;
       int   argcount;
-      int   pid = fork();
+      int   pid;
       int   i;
-      
+
+      argcount = sbusplit(c, argscontent);
+      for (i = 0;i < argcount;i++)
+         args[i] = argscontent[i];
+
+      /* If the command needs be run in the background, the last argument
+       * should be '&' and we are not supposed to pass that to execvp*()
+       * If '&' is not set, we make the LAST argument as NULL. */ 
+      if (argcount > 0 && iscmd(argscontent[argcount-1], "&"))
+      {
+         background = 1;
+         args[argcount-1] = NULL;
+      }
+      else
+      {
+         args[argcount] = NULL;
+      }
+
+      pid = fork();
       if (pid == 0)
       {
-         argcount = sbusplit(c, argscontent);
-         for (i = 0;i < argcount;i++)
-            args[i] = argscontent[i];
-         args[argcount] = NULL;
-
          if (!execvpe(args[0], args, env))
          {
             printError("error - invalid command/unable to execute\n");
@@ -214,7 +238,8 @@ int runcmd(char *buf)
       } 
       else
       {
-         waitpid(pid, &status, 0);
+         if (!background)
+            waitpid(pid, &status, 0);
       }
 
       //printf("invalid command\n");
