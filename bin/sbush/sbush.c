@@ -10,20 +10,20 @@
 #define MAX_PIPE_COUNT     100
 #define MAX_PIPE_CMD_SIZE  MAX_ARG_SIZE
 
-void printMessage(char *str)
+void sbuprintmsg(char *str)
 {
    fputs(str, stdout);
 }
 
-void printLine(char* str)
+void sbuprintline(char* str)
 {
-   printMessage(str);
-   printMessage("\n");
+   sbuprintmsg(str);
+   sbuprintmsg("\n");
 }
 
-void printError(char *str)
+void sbuerr(char *str)
 {
-   printLine(str);
+   sbuprintline(str);
 }
 
 int sbustrncmp(char *str1, char *str2, int size)
@@ -116,7 +116,7 @@ int sbusplit(char* buf, char args[][MAX_ARG_SIZE], char delimiter)
       argcnt++;
       if (argcnt >= MAX_ARG_COUNT)
       {
-         printError("error - too many arguments");
+         sbuerr("error - too many arguments");
          break;
       }
 
@@ -155,11 +155,11 @@ int runcmd(char *buf)
       char cwd[MAX_BUFFER_SIZE];
       if (getcwd(cwd, sizeof(cwd)))
       {
-         printLine(cwd);
+         sbuprintline(cwd);
       }
       else
       {
-         printLine("error - unable to get present working directory");
+         sbuprintline("error - unable to get present working directory");
       }
    }
    /* (exit is matched and we are at the end of the buffer) OR 
@@ -199,7 +199,7 @@ int runcmd(char *buf)
    
       if (chdir(path))
       {
-         printError("error - unable to change directory");
+         sbuerr("error - unable to change directory");
       } 
    }  
    else if (iscmd(c, "export "))
@@ -225,7 +225,7 @@ int runcmd(char *buf)
 
       if (setenv(keystart, c+1, 1))
       {
-         printError("error - unable to set environment variable");
+         sbuerr("error - unable to set environment variable");
       }
       //printf("%s\n", getenv("PATH"));
       //printf("%s\n", getenv("PS1"));
@@ -271,7 +271,7 @@ int runcmd(char *buf)
       /* We don't support pipe and background task in the same command */
       if (pipeargcount > 1 && background)
       {
-         printError("error - invalid pipe and background combination");
+         sbuerr("error - invalid pipe and background combination");
          return 0;
       }
 
@@ -279,7 +279,7 @@ int runcmd(char *buf)
       {
          if (pipe(fd[i]))
          {
-            printError("error - invalid pipe and background combination");
+            sbuerr("error - invalid pipe and background combination");
             return 0;
          }
       }
@@ -292,13 +292,13 @@ int runcmd(char *buf)
             if (i > 0)
             {
                if (dup2(fd[i-1][0], 0))
-                  printError("error - dup2 failed");
+                  sbuerr("error - dup2 failed");
             }
 
             if (i < pipeargcount-1)
             {
                if (dup2(fd[i][1], 1))
-                  printError("error - dup2 failed");
+                  sbuerr("error - dup2 failed");
             }
 
             for (j = 0;j < pipeargcount - 1;j++)
@@ -308,17 +308,16 @@ int runcmd(char *buf)
             }
             if (execvpe(args[i][0], args[i], env))
             {
-               printError("error - invalid command/unable to execute");
+               sbuerr("error - invalid command/unable to execute");
             }
  
-            printError("error - unable to execute");
             exit(1);
          }
       }
 
       if (pid < 0)
       {
-         printError("error - fork failed");
+         sbuerr("error - fork failed");
          return 0;
       }
       else if (pid > 0)
@@ -329,8 +328,11 @@ int runcmd(char *buf)
             close(fd[i][1]);
          }
 
-         for (i = 0;i < pipeargcount;i++)
-            wait(&status);
+         if (!background)
+         {
+            for (i = 0;i < pipeargcount;i++)
+               wait(&status);
+         }
       }
    }
 
@@ -353,7 +355,7 @@ int main(int argc, char *argv[], char *envp[])
    while(1)
    {
       if (argc == 1)
-         printMessage(getenv("PS1"));
+         sbuprintmsg(getenv("PS1"));
 
       /* fgets stores '\n' AND '\0' at the end of the buffer unlike
        * gets which stores only '\0'. So, we find '\n' and replace
