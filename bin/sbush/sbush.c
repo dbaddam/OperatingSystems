@@ -4,9 +4,11 @@
 #include <unistd.h>
 #include <sys/wait.h>
 
-#define MAX_BUFFER_SIZE 1024
-#define MAX_ARG_COUNT 100
-#define MAX_ARG_SIZE 1000
+#define MAX_BUFFER_SIZE    1024
+#define MAX_ARG_COUNT      100
+#define MAX_ARG_SIZE       100
+#define MAX_PIPE_COUNT     100
+#define MAX_PIPE_CMD_SIZE  MAX_ARG_SIZE
 
 void printMessage(char *str)
 {
@@ -81,15 +83,15 @@ void sbustrncpy(char* dest, char* src, int len)
 }
 
 /********************** sbusplit ************************/
-/* sbusplit - This function splits the input buffer with space the delimiter.
-      printf("New env %s\n", getenv("PATH"));
+/* sbusplit - This function splits the input buffer using delimiter.
  *
  * Arguments :
- * buf  - input string
- * args - the output set of strings
+ * buf       - input string
+ * args      - the output set of strings
+ * delimiter - splits the string based on delimiter
  * Returns the number of arguments
  */
-int sbusplit(char* buf, char args[][MAX_ARG_SIZE])
+int sbusplit(char* buf, char args[][MAX_ARG_SIZE], char delimiter)
 {
    char  *c = buf;
    char  *ch;
@@ -99,11 +101,11 @@ int sbusplit(char* buf, char args[][MAX_ARG_SIZE])
  
    while (*c != '\0')
    {
-      while (*c == ' ' || *c == '\t')
+      while (*c == ' ')
          c++;
       argstart = c;
 
-      while (*c != ' ' && *c != '\t' && *c != '\0')
+      while (*c != delimiter  && *c != '\0')
          c++;
       argend = c;
 
@@ -117,6 +119,13 @@ int sbusplit(char* buf, char args[][MAX_ARG_SIZE])
          printError("error - too many arguments");
          break;
       }
+
+      /* If we reached the end of string, break.
+       * else go to the next character */
+      if (!*c)
+         break;
+      else
+         c++;
    }
    return argcnt;
 }
@@ -223,47 +232,135 @@ int runcmd(char *buf)
    }
    else
    {
-      char *args[MAX_ARG_COUNT];
-      char  argscontent[MAX_ARG_COUNT][MAX_ARG_SIZE];
+      char  pipeargs[MAX_PIPE_COUNT][MAX_PIPE_CMD_SIZE];
+      char *args[MAX_PIPE_COUNT][MAX_ARG_COUNT];
+      char  argscontent[MAX_PIPE_COUNT][MAX_ARG_COUNT][MAX_ARG_SIZE];
+      int   fd[MAX_PIPE_COUNT-1][2];
+      int   pids[MAX_PIPE_COUNT];
       char *env[] = {NULL};
-      int   background = 0;
-      int   status;
+      int   background = 0;               /* TODOKISHAN : background implementation */
+      int   pid = 0;
+      //int   status;
       int   argcount;
-      int   pid;
-      int   i;
+      int   pipeargcount;                     /* # of pipes + 1 */
+      int   i, j;
 
-      argcount = sbusplit(c, argscontent);
-      for (i = 0;i < argcount;i++)
-         args[i] = argscontent[i];
+      pipeargcount = sbusplit(c, pipeargs, '|');
 
-      /* If the command needs be run in the background, the last argument
-       * should be '&' and we are not supposed to pass that to execvp*()
-       * If '&' is not set, we make the LAST argument as NULL. */ 
-      if (argcount > 0 && iscmd(argscontent[argcount-1], "&"))
+      for (i = 0;i < pipeargcount;i++)
       {
-         background = 1;
-         args[argcount-1] = NULL;
-      }
-      else
-      {
-         args[argcount] = NULL;
+          printf("%s\n",pipeargs[i]);
       }
 
-      pid = fork();
-      if (pid == 0)
-      {
-         if (!execvpe(args[0], args, env))
+      for (i = 0;i < pipeargcount;i++)
+      { 
+         argcount = sbusplit(pipeargs[i], argscontent[i],' ');
+         for (j = 0;j < argcount;j++)
+            args[i][j] = argscontent[i][j];
+
+         /* If the command needs be run in the background, the last argument
+          * should be '&' and we are not supposed to pass that to execvp*()
+          * If '&' is not set, we make the LAST argument as NULL. */ 
+         if (pipeargcount == 1 &&   /* no pipes */
+             argcount > 0 && 
+             iscmd(argscontent[i][argcount-1], "&"))
          {
-            printError("error - invalid command/unable to execute\n");
+            background = 1;
+            args[i][argcount-1] = NULL;
          }
- 
-         printError("error - unable to execute");
-         exit(1);
-      } 
-      else
+         else
+         {
+            args[i][argcount] = NULL;
+         }
+      }
+
+      /* We don't support pipe and background task in the same command */
+      if (pipeargcount > 1 && background)
       {
-         if (!background)
-            waitpid(pid, &status, 0);
+         printError("error - invalid pipe and background combination");
+         return 0;
+      }
+
+      for (i = 0;i < pipeargcount - 1;i++)
+      {
+         if (pipe(fd[i]))
+         {
+            printError("error - invalid pipe and background combination");
+            return 0;
+         }
+         else
+         {
+            printf("fd[%d][0]\n", fd[i][0]);
+            printf("fd[%d][1]\n", fd[i][1]);
+         }
+      }
+
+      for (i = 0;i < pipeargcount;i++)
+      {
+         pid = fork();
+         if (pid == 0)
+         {
+            if (i == 0)
+               close(0);
+            if (i > 0)
+            {
+               if (dup2(fd[i-1][0], 0))
+                  printf("dup FAIL1 - %d\n",i);
+            }
+
+            if (i < pipeargcount-1)
+            {
+               if (dup2(fd[i][1], 1))
+                  printf("dup FAIL2 - %d\n",i);
+            }
+/*
+            for (i = 0;i < pipeargcount - 1;i++)
+            {
+               close(fd[i][0]);
+               close(fd[i][1]);
+            }
+*/
+            if (!execvpe(args[i][0], args[i], env))
+            {
+               printError("error - invalid command/unable to execute");
+            }
+ 
+            printError("error - unable to execute");
+            exit(1);
+         }
+         else
+         {
+            printf("pid = %d\n", pid);
+            pids[i] = pid; 
+         } 
+      }
+
+      if (pid < 0)
+      {
+         printError("error - fork failed");
+         return 0;
+      }
+      else if (pid > 0)
+      {
+         for (i = 0;i < pipeargcount - 1;i++)
+         {
+            close(fd[i][0]);
+            close(fd[i][1]);
+         }
+/*
+         while ((pid = waitpid(0,NULL,0)) <= 0)
+         {
+            printf("ret = %d\n", pid);
+         }
+*/
+         for (i = 0;i < pipeargcount;i++)
+         {
+            printf("waiting %d - pid %d\n", i, pids[i]);
+            waitpid(pids[i], NULL, 0);
+            printf("waiting end %d\n", i);
+         }
+         //sleep(2);
+         printf("Done waiting\n");
       }
    }
 
