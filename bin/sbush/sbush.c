@@ -1,7 +1,7 @@
 #define _GNU_SOURCE
+#include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
-#include <stdlib.h>
 #include <sys/wait.h>
 
 #define MAX_BUFFER_SIZE 1024
@@ -136,7 +136,11 @@ int runcmd(char *buf)
       return 0;
    }
 
-   if ((iscmd(c, "pwd") && !*(c+3))||
+   if (iscmd(c, "#!")) 
+   {
+      return 0;
+   }
+   else if ((iscmd(c, "pwd") && !*(c+3))||
         iscmd(c, "pwd "))
    {
       char cwd[MAX_BUFFER_SIZE];
@@ -191,11 +195,31 @@ int runcmd(char *buf)
    }  
    else if (iscmd(c, "export "))
    {
+      char *keystart;
       c += sbustrlen("export ");
-      if (putenv(c))
+
+      while (*c == ' ' || *c == '\t')
+         c++;
+      keystart = c;
+
+      while (*c != '=' && *c != '\0')
+         c++;
+
+      /* incomplete command - 'export PATH' */
+      if (*c == '\0')
+         return 0;
+      else
+      {
+         /* *c == '=' */
+         *c = '\0';
+      }
+
+      if (setenv(keystart, c+1, 1))
       {
          printError("error - unable to set environment variable");
       }
+      //printf("%s\n", getenv("PATH"));
+      //printf("%s\n", getenv("PS1"));
    }
    else
    {
@@ -241,20 +265,28 @@ int runcmd(char *buf)
          if (!background)
             waitpid(pid, &status, 0);
       }
-
-      //printf("invalid command\n");
    }
 
    return 0;
 }
 
 
-int main(int argc, char *argv[], char *envp[]) {
+int main(int argc, char *argv[], char *envp[])
+{
    char  buffer[MAX_BUFFER_SIZE];
    char *c;
+   FILE *fp = stdin;
+
+   if (argc > 1)
+   {
+      fp = fopen(argv[1], "r");
+   }
+
+   setenv("PS1", "sbush>", 1);
    while(1)
    {
-      printMessage("sbush> ");
+      if (argc == 1)
+         printMessage(getenv("PS1"));
 
       /* fgets stores '\n' AND '\0' at the end of the buffer unlike
        * gets which stores only '\0'. So, we find '\n' and replace
@@ -262,14 +294,13 @@ int main(int argc, char *argv[], char *envp[]) {
        * We are going back and forth between fgets and gets. You may
        * have to uncomment the following code.
        */
-      if (!fgets(buffer, MAX_BUFFER_SIZE, stdin))
+      if (!fgets(buffer, MAX_BUFFER_SIZE, (argc > 1 )? fp:stdin))
       {
-         printError("Unable to process input");
+         break;
       }
 
       c = buffer;
-      /* We are assuming we WILL have new line */
-      while (*c != '\n')
+      while (*c != '\n' && *c != '\0')
          c++;
       *c = '\0';
 
@@ -277,6 +308,8 @@ int main(int argc, char *argv[], char *envp[]) {
       {
          break;
       }
-   } 
+   }
+
+   fclose(fp); 
    return 0;
 }

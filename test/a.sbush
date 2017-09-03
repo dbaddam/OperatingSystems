@@ -1,0 +1,4 @@
+#!/home/knerella/workdir/rootfs/bin/sbush
+pwd
+cd ..
+pwd
