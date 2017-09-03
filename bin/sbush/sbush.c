@@ -236,21 +236,15 @@ int runcmd(char *buf)
       char *args[MAX_PIPE_COUNT][MAX_ARG_COUNT];
       char  argscontent[MAX_PIPE_COUNT][MAX_ARG_COUNT][MAX_ARG_SIZE];
       int   fd[MAX_PIPE_COUNT-1][2];
-      int   pids[MAX_PIPE_COUNT];
       char *env[] = {NULL};
       int   background = 0;               /* TODOKISHAN : background implementation */
       int   pid = 0;
-      //int   status;
+      int   status;
       int   argcount;
       int   pipeargcount;                     /* # of pipes + 1 */
       int   i, j;
 
       pipeargcount = sbusplit(c, pipeargs, '|');
-
-      for (i = 0;i < pipeargcount;i++)
-      {
-          printf("%s\n",pipeargs[i]);
-      }
 
       for (i = 0;i < pipeargcount;i++)
       { 
@@ -288,11 +282,6 @@ int runcmd(char *buf)
             printError("error - invalid pipe and background combination");
             return 0;
          }
-         else
-         {
-            printf("fd[%d][0]\n", fd[i][0]);
-            printf("fd[%d][1]\n", fd[i][1]);
-         }
       }
 
       for (i = 0;i < pipeargcount;i++)
@@ -300,27 +289,24 @@ int runcmd(char *buf)
          pid = fork();
          if (pid == 0)
          {
-            if (i == 0)
-               close(0);
             if (i > 0)
             {
                if (dup2(fd[i-1][0], 0))
-                  printf("dup FAIL1 - %d\n",i);
+                  printError("error - dup2 failed");
             }
 
             if (i < pipeargcount-1)
             {
                if (dup2(fd[i][1], 1))
-                  printf("dup FAIL2 - %d\n",i);
+                  printError("error - dup2 failed");
             }
-/*
-            for (i = 0;i < pipeargcount - 1;i++)
+
+            for (j = 0;j < pipeargcount - 1;j++)
             {
-               close(fd[i][0]);
-               close(fd[i][1]);
+               close(fd[j][0]);
+               close(fd[j][1]);
             }
-*/
-            if (!execvpe(args[i][0], args[i], env))
+            if (execvpe(args[i][0], args[i], env))
             {
                printError("error - invalid command/unable to execute");
             }
@@ -328,11 +314,6 @@ int runcmd(char *buf)
             printError("error - unable to execute");
             exit(1);
          }
-         else
-         {
-            printf("pid = %d\n", pid);
-            pids[i] = pid; 
-         } 
       }
 
       if (pid < 0)
@@ -347,20 +328,9 @@ int runcmd(char *buf)
             close(fd[i][0]);
             close(fd[i][1]);
          }
-/*
-         while ((pid = waitpid(0,NULL,0)) <= 0)
-         {
-            printf("ret = %d\n", pid);
-         }
-*/
+
          for (i = 0;i < pipeargcount;i++)
-         {
-            printf("waiting %d - pid %d\n", i, pids[i]);
-            waitpid(pids[i], NULL, 0);
-            printf("waiting end %d\n", i);
-         }
-         //sleep(2);
-         printf("Done waiting\n");
+            wait(&status);
       }
    }
 
