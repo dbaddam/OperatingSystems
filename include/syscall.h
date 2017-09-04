@@ -7,6 +7,8 @@
 #define __NR_close				3ul
 #define __NR_getpid				39ul
 #define __NR_fork				57ul
+#define __NR_dup2                               33ul
+#define __NR_pipe                               22ul
 #define __NR_execve				59ul
 #define __NR_getcwd				79ul
 #define __NR_chdir				80ul
