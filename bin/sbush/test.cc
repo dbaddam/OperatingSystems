@@ -25,6 +25,21 @@ int main(int argc, char *argv[], char *envp[])
        puts(cwd);
     }
 
+    int i;
+    puts("*****Printing arguments****");
+    for (i = 0;i < argc;i++)
+    {
+       puts(argv[i]);
+    }
+    puts("*****End of Printing arguments****");
+
+    puts("*****Printing env****");
+    for (i = 0;envp[i];i++)
+    {
+       puts(envp[i]);
+    }
+    puts("*****End of Printing env****");
+
     //puts(envp[0]);
 
     char* args[] = {"ls", "-l", NULL};
