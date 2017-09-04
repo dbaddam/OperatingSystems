@@ -14,7 +14,7 @@ char *getcwd(char *buf, size_t size);
 
 pid_t fork();
 int execvpe(const char *file, char *const argv[], char *const envp[]);
-pid_t wait(int *status)
+pid_t wait(int *status);
 int waitpid(int pid, int *status);
 
 unsigned int sleep(unsigned int seconds);
@@ -24,9 +24,50 @@ pid_t getppid(void);
 
 // OPTIONAL: implement for ``on-disk r/w file system (+10 pts)''
 off_t lseek(int fd, off_t offset, int whence);
-int mkdir(const char *pathname, mode_t mode);
+//int mkdir(const char *pathname, mode_t mode);
 
 // OPTIONAL: implement for ``signals and pipes (+10 pts)''
 int pipe(int pipefd[2]);
 
+
+typedef unsigned long long ull;
+
+#define syscall1(name, a1) \
+ull sysret; \
+__asm__ __volatile__ ( \
+    "movq %1, %%rax\n\t" \
+    "movq %2, %%rdi\n\t" \
+    "syscall\n\t" \
+    "movq %%rax, %0\n\t" \
+    : "=r"(sysret) \
+    : "r"(__NR_##name), "r" ((ull)a1) \
+    : "rax", "rdi", "memory" \
+                     ); 
+
+#define syscall2(name, a1, a2) \
+ull sysret; \
+__asm__ __volatile__ ( \
+    "movq %1, %%rax\n\t" \
+    "movq %2, %%rdi\n\t" \
+    "movq %3, %%rsi\n\t" \
+    "syscall\n\t" \
+    "movq %%rax, %0\n\t" \
+    : "=r"(sysret) \
+    : "r"(__NR_##name), "r" ((ull)a1), "r" ((ull)a2) \
+    : "rax", "rdi", "rsi", "memory" \
+                     ); 
+
+#define syscall3(name, a1, a2, a3) \
+ull sysret; \
+__asm__ __volatile__ ( \
+    "movq %1, %%rax\n\t" \
+    "movq %2, %%rdi\n\t" \
+    "movq %3, %%rsi\n\t" \
+    "movq %4, %%rdx\n\t" \
+    "syscall\n\t" \
+    "movq %%rax, %0\n\t" \
+    : "=r"(sysret) \
+    : "r"(__NR_##name), "r" ((ull)a1), "r" ((ull)a2), "r" ((ull)a3) \
+    : "rax", "rdi", "rsi", "rdx", "memory" \
+                     ); 
 #endif
