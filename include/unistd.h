@@ -14,6 +14,7 @@ char *getcwd(char *buf, size_t size);
 
 pid_t fork();
 int execvpe(const char *file, char *const argv[], char *const envp[]);
+int execve(const char *file, char *const argv[], char *const envp[]);
 pid_t wait(int *status);
 int waitpid(int pid, int *status);
 
@@ -31,6 +32,17 @@ int pipe(int pipefd[2]);
 
 
 typedef unsigned long long ull;
+
+#define syscall0(name) \
+ull sysret; \
+__asm__ __volatile__ ( \
+    "movq %1, %%rax\n\t" \
+    "syscall\n\t" \
+    "movq %%rax, %0\n\t" \
+    : "=r"(sysret) \
+    : "r"(__NR_##name) \
+    : "rax", "memory" \
+                     ); 
 
 #define syscall1(name, a1) \
 ull sysret; \
