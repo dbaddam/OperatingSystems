@@ -5,6 +5,7 @@
 #define __NR_write				1ul
 #define __NR_open				2ul
 #define __NR_close				3ul
+#define __NR_access				21ul
 #define __NR_pipe                               22ul
 #define __NR_dup2                               33ul
 #define __NR_getpid				39ul

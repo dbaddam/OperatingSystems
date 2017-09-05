@@ -7,6 +7,19 @@
 
 int main(int argc, char *argv[], char *envp[])
 {
+    puts("$$$$$$Adding XYZ=KISHAN");
+    setenv("XYZ", "KISHAN", 1);
+    printenv(); 
+    puts("$$$$$$Changing XYZ=NERELLA");
+    setenv("XYZ", "NERELLA", 1);    
+    printenv();
+    puts("$$$$$$Changing XYZ=KISHAN without overwrite FAIL");
+    setenv("XYZ", "KISHAN", 0);    
+    printenv();
+    puts("$$$printing PATH value");
+    puts(getenv("PATH"));
+    puts(getenv("XYZ"));
+    return 0;
     puts("Hello World");
     char cwd[MAX_BUFFER_SIZE];
     char buffer[MAX_BUFFER_SIZE];
