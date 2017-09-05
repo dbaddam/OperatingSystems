@@ -9,13 +9,14 @@ int main(int argc, char *argv[], char *envp[])
 {
     puts("Hello World");
     char cwd[MAX_BUFFER_SIZE];
+    char buffer[MAX_BUFFER_SIZE];
 
     if (getcwd(cwd, MAX_BUFFER_SIZE))
     {
        puts(cwd);
     }
 
-    if (chdir(".."))
+    if (chdir("../.."))
     {
        puts("error ");
     }
@@ -42,16 +43,29 @@ int main(int argc, char *argv[], char *envp[])
 
     //puts(envp[0]);
 
+    FILE* fp = fopen("/home/knerella/workdir/bin/sbush/a.txt","r");
+    while (fgets(buffer, MAX_BUFFER_SIZE, fp))
+    {
+       puts(buffer);
+    }
+    
+    fclose(fp);
+
     char* args[] = {"ls", "-l", NULL};
     char* envpp[] = {NULL};
 
     if (fork() == 0)
     {
        execve("/bin/ls", args, envpp);
+       puts("******************EXECVE FAILED");
+       exit(0);
     }
     else
     {
+       int status;
        puts("Parent");
+       wait(&status);
+       puts("Parent wait done");
     }
     return 0;
 }

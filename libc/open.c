@@ -2,9 +2,9 @@
 #include <syscall.h>
 #include <unistd.h>
 
-int pipe(int pipefd[2])
+int open(const char *pathname, int flags)
 {
-   syscall1(pipe, pipefd);
+   syscall2(open, pathname, flags);
 
    return (int)sysret;
 }

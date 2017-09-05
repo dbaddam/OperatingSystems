@@ -1,6 +1,6 @@
-#define <stdlib.h>
-#define <syscall.h>
-#define <unistd.h>
+#include <stdlib.h>
+#include <syscall.h>
+#include <unistd.h>
 
 int close(int fd)
 {

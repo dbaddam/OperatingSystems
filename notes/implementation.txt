@@ -1,1 +1,1 @@
-1. If time permits, implement #! version.
+1. We don't have error handling whatsoever.

@@ -30,6 +30,7 @@ off_t lseek(int fd, off_t offset, int whence);
 // OPTIONAL: implement for ``signals and pipes (+10 pts)''
 int pipe(int pipefd[2]);
 
+int dup2(int oldfd, int newfd);
 
 typedef unsigned long long ull;
 
@@ -81,5 +82,20 @@ __asm__ __volatile__ ( \
     : "=r"(sysret) \
     : "r"(__NR_##name), "r" ((ull)a1), "r" ((ull)a2), "r" ((ull)a3) \
     : "rax", "rdi", "rsi", "rdx", "memory" \
+                     ); 
+
+#define syscall4(name, a1, a2, a3, a4) \
+ull sysret; \
+__asm__ __volatile__ ( \
+    "movq %1, %%rax\n\t" \
+    "movq %2, %%rdi\n\t" \
+    "movq %3, %%rsi\n\t" \
+    "movq %4, %%rdx\n\t" \
+    "movq %4, %%r10\n\t" \
+    "syscall\n\t" \
+    "movq %%rax, %0\n\t" \
+    : "=r"(sysret) \
+    : "r"(__NR_##name), "r" ((ull)a1), "r" ((ull)a2), "r" ((ull)a3) \
+    : "rax", "rdi", "rsi", "rdx", "r10", "memory" \
                      ); 
 #endif

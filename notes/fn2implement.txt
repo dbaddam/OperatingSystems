@@ -1,14 +1,16 @@
-fputs(str, stdout)
+
 getcwd(cwd, sizeof(cwd))
 chdir(path)
-setenv(keystart, c+1, 1)
-pipe(fd[i])
 fork()
 dup2()
 close(fd)
-execvpe(args[i][0], args[i], env)
 exit(1)
-wait(&status)
-fopen(argv[1], "r")
-fgets()
+pipe(fd[i])
+fputs(str, stdout)
 fclose(fp); 
+fgets()
+fopen(argv[1], "r")
+wait(&status)
+
+setenv(keystart, c+1, 1)
+execvpe(args[i][0], args[i], env)
