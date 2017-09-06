@@ -3,14 +3,26 @@
 
 #define NAME_MAX 255
 
+typedef unsigned long off_t;
+/*
 struct dirent {
+ unsigned long d_ino;
+ unsigned long d_off;
+ unsigned short d_reclen;
  char d_name[NAME_MAX+1];
-};
+};*/
+
+struct linux_dirent {
+           long           d_ino;
+           off_t          d_off;
+           unsigned short d_reclen;
+           char           d_name[];
+       };
 
 typedef struct DIR DIR;
 
 DIR *opendir(const char *name);
 struct dirent *readdir(DIR *dirp);
 int closedir(DIR *dirp);
-
+int getdents(unsigned int fd, struct linux_dirent *dirp, unsigned int count);
 #endif

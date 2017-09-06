@@ -18,9 +18,10 @@ extern FILE files[MAX_FILES];
 #define stdout  (files+1)
 #define stderr  (files+2)
 
-#define O_RDONLY 0
-#define O_WRONLY 1
-#define O_RDWR   2
+#define O_RDONLY     0
+#define O_WRONLY     1
+#define O_RDWR       2
+#define O_DIRECTORY  200000
 
 int putchar(int c);
 int puts(const char *s);
