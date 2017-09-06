@@ -2,14 +2,26 @@
 #include <syscall.h>
 #include <unistd.h>
 #include <string.h>
+#include <stdio.h>
 
 #define MAX_FILE_SIZE 1024
 
 int execvp(const char *filename, char *const argv[])
 {
-/*
-   char  file[MAX_FILE_SIZE] ;
+   char  file[MAX_FILE_SIZE];
    char *path = getenv("PATH");
+   int   i;
+
+   /* If it's a relative path we don't search in PATH */
+   for (i = 0; filename[i];i++)
+   {
+       if (filename[i] == '/')
+          return execve(filename, argv, _sbush_env);
+   }
+
+   /* If the file is in this directory, execute now */
+   if (!access(filename, F_OK))
+      return execve(filename, argv, _sbush_env);
 
    while (*path)
    {
@@ -20,8 +32,10 @@ int execvp(const char *filename, char *const argv[])
          keyend++;
 
       strncpy(file, path, (keyend-keystart));
-      file[keyend-keystart] = '\0';
 
+      file[keyend-keystart] = '/';
+      file[keyend-keystart+1] = '\0';
+ 
       strcat(file, filename);
 
       if (!access(file, F_OK))
@@ -32,6 +46,6 @@ int execvp(const char *filename, char *const argv[])
 
       path += (keyend-keystart)+1;
    }
-*/
-   return execve(filename /*file*/, argv, _sbush_env);
+
+   return execve(file, argv, _sbush_env);
 }
