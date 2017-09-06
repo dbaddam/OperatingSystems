@@ -1,56 +1,39 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <dirent.h>
+       #include <dirent.h>
+       #include <stdio.h>
+       #include <unistd.h>
+       #include <stdlib.h>
 
-#define MAX_BUFFER_SIZE 1024
+       #define MAX_BUFFER_SIZE 1024
 
-/*
-typedef unsigned long ull;
-#define __NR_getdents 78ul
-#define syscall3(name, a1, a2, a3) \
-ull sysret; \
-__asm__ __volatile__ ( \
-    "movq %1, %%rax\n\t" \
-    "movq %2, %%rdi\n\t" \
-    "movq %3, %%rsi\n\t" \
-    "movq %4, %%rdx\n\t" \
-    "syscall\n\t" \
-    "movq %%rax, %0\n\t" \
-    : "=r"(sysret) \
-    : "r"(__NR_##name), "r" ((ull)a1), "r" ((ull)a2), "r" ((ull)a3) \
-    : "rax", "rdi", "rsi", "rdx", "memory" \
-                     ); 
+       
+       int main(int argc, char *argv[], char *envp[])
+       {
+           int fd, n;
+           char buffer[MAX_BUFFER_SIZE];
+           struct linux_dirent* d;
+           int pos;
 
-int getdents(int fd, struct dirent* dirp, int size)
-{
-    syscall3(getdents, fd, dirp, size);
+           fd = open(argc > 1 ? argv[1] : ".", O_RDONLY /*| O_DIRECTORY*/ );
+           if (fd == -1)
+               fputs("wrong with fd!", stdout);
 
-    return (int)sysret;
-}
-*/
-int main(int argc, char *argv[], char *envp[])
-{
-   char buffer[MAX_BUFFER_SIZE] = ".";
-   int fd = open((argc > 1) ? argv[1]:buffer, O_RDONLY); 
-   struct dirent dirp;
-   if(fd < 0)
-      puts("Something went wrong!");
-   else
-   {
-      while(getdents(fd, &dirp, MAX_BUFFER_SIZE) > 0)
-      {
-            fputs(dirp.d_name-1, stdout);
-            fputs("  ",stdout);
+           for ( ; ; ) {
+               n = getdents(fd, (struct linux_dirent *)buffer, MAX_BUFFER_SIZE);
+               if (n == -1)
+                    fputs("Something wrong!", stdout);
 
-            //printf("offset = %ld\n", dirp.d_off);
-            //printf("offset = %ld\n", dirp.d_off - 1);
-            lseek(fd, dirp.d_off, SEEK_SET);
-      }
-      fputs("\n",stdout);
-   }
-   close(fd);   
-   return 0;
-}
+               if (n == 0)
+                   break;
 
+               for (pos = 0; pos < n;) {
+                   d = (struct linux_dirent *) (buffer + pos);
+                   fputs(d->d_name, stdout);
+                   fputs("  ", stdout);
+                   pos += d->d_reclen;
+               }
+               fputs("\n", stdout);
+           }
 
+           close(fd);
+           return 0;
+       }

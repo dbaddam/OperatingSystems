@@ -18,9 +18,8 @@ void _start(void) {
    );
 
    argc = *((int*)(rsp + 24));
-   putchar('0' + argc);
-   puts("\n");
    argv = rsp + 32;
-   envp = rsp + 24 + ((argc + 2)*8); 
+   envp = rsp + 24 + ((argc + 2)*8);
+   setupenv(envp); 
    exit(main(argc, argv, envp));
 }

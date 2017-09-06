@@ -236,7 +236,6 @@ int runcmd(char *buf)
       char *args[MAX_PIPE_COUNT][MAX_ARG_COUNT];
       char  argscontent[MAX_PIPE_COUNT][MAX_ARG_COUNT][MAX_ARG_SIZE];
       int   fd[MAX_PIPE_COUNT-1][2];
-      char *env[] = {NULL};
       int   background = 0;               /* TODOKISHAN : background implementation */
       int   pid = 0;
       int   status;
@@ -306,7 +305,7 @@ int runcmd(char *buf)
                close(fd[j][0]);
                close(fd[j][1]);
             }
-            if (execvpe(args[i][0], args[i], env))
+            if (execvp(args[i][0], args[i]))
             {
                sbuerr("error - invalid command/unable to execute");
             }
@@ -330,6 +329,8 @@ int runcmd(char *buf)
 
          if (!background)
          {
+            /* TODOKISHAN Ideally we should wait for the pids, otherwise 
+             * previous background process can interfere with wait */
             for (i = 0;i < pipeargcount;i++)
                wait(&status);
          }

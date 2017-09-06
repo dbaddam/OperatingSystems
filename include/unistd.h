@@ -9,12 +9,20 @@ ssize_t read(int fd, void *buf, size_t count);
 ssize_t write(int fd, const void *buf, size_t count);
 int unlink(const char *pathname);
 
+#define R_OK    4               /* Test for read permission.  */
+#define W_OK    2               /* Test for write permission.  */
+#define X_OK    1               /* Test for execute permission.  */
+#define F_OK    0               /* Test for existence.  */
+int access(const char *pathname, int mode);
+
 int chdir(const char *path);
 char *getcwd(char *buf, size_t size);
 
 pid_t fork();
 int execvpe(const char *file, char *const argv[], char *const envp[]);
+int execvp(const char *file, char *const argv[]);
 int execve(const char *file, char *const argv[], char *const envp[]);
+
 pid_t wait(int *status);
 int waitpid(int pid, int *status);
 
