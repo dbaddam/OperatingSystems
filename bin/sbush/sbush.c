@@ -290,13 +290,13 @@ int runcmd(char *buf)
          {
             if (i > 0)
             {
-               if (dup2(fd[i-1][0], 0))
+               if (dup2(fd[i-1][0], 0) < 0)
                   sbuerr("error - dup2 failed");
             }
 
             if (i < pipeargcount-1)
             {
-               if (dup2(fd[i][1], 1))
+               if (dup2(fd[i][1], 1) < 0)
                   sbuerr("error - dup2 failed");
             }
 
@@ -364,7 +364,7 @@ int main(int argc, char *argv[], char *envp[])
        * We are going back and forth between fgets and gets. You may
        * have to uncomment the following code.
        */
-      if (!fgets(buffer, MAX_BUFFER_SIZE, (argc > 1 )? fp:stdin))
+      if (fgets(buffer, MAX_BUFFER_SIZE, (argc > 1 )? fp:stdin) <= 0)
       {
          break;
       }

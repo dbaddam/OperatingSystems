@@ -32,7 +32,8 @@ pid_t getpid(void);
 pid_t getppid(void);
 
 // OPTIONAL: implement for ``on-disk r/w file system (+10 pts)''
-#define SEEK_SET 1
+#define SEEK_SET 0
+#define SEEK_CUR 1
 off_t lseek(int fd, off_t offset, int whence);
 //int mkdir(const char *pathname, mode_t mode);
 

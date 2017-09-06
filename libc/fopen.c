@@ -49,6 +49,7 @@ FILE* fopen(const char *path, const char *mode)
       if (fd < MAX_FILES)
       {
          files[fd].fd = fd;
+         files[fd].offset = 0;
          return files + fd;
       }
       else

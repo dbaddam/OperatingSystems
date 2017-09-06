@@ -5,8 +5,9 @@ static const int EOF = -1;
 
 struct FILE
 {
-   int fd;
-   int flags;
+   int  fd;
+   long offset;
+   int  flags;
 #define VALID_FD_FILE 1
 };
 
