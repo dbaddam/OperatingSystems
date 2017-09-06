@@ -1,24 +1,26 @@
 #include <stdio.h>
-#include <unistd.h>
 #include <stdlib.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 
 #define MAX_BUFFER_SIZE 1024
 
 
-int main(int argc, char *argv[])
+int main(int argc, char *argv[], char* envp[])
 {
    char buffer[MAX_BUFFER_SIZE];
-   FILE *fp;
-   if(argc > 0)
+   FILE *fp = NULL;
+
+   if (argc == 1)
+   {
+      fputs("cat: file not specified", stdout);
+      return -1;
+   }
+   else if (argc > 1)
    {
       fp = fopen(argv[1], "r");
    }
    
-   while(fgets(buffer, MAX_BUFFER_SIZE, fp))
-        fputs(buffer, stdout);  
+   while (fgets(buffer, MAX_BUFFER_SIZE, fp))
+      puts(buffer);  
    
    fclose(fp);
    return 0;
