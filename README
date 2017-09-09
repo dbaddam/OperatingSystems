@@ -1,5 +1,3 @@
-Implemented all the parts of warmup project 1
-
 -To set an environment variable 'foo' to 'bar' in sbush, use
   export foo=bar
 - sbush doesn't support environment variable expansion. 
