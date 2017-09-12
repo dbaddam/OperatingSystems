@@ -1,12 +1,14 @@
 #include <sys/kprintf.h>
-#include<stdio.h>
-#include<stdarg.h>
+#include <stdio.h>
+#include <stdarg.h>
 
 typedef int boolean;
 
 #define true 1
 #define false 0
-#define MAX_BUFFER 1024
+#define MAX_BUFFER 4096
+#define width 160
+#define height 15
 
 int stringlen(const char *a) 
 {
@@ -110,7 +112,18 @@ void longTOhexa( unsigned long number, char *p, int base){
     p[i] = '\0';
     strrev(p);
 }
-int pos = 0;
+int pos =0;
+void memcopy()
+{
+     register char *temp3, *temp2;
+     pos =0;
+     temp2 = (char*)0xb8000+pos;
+     for(temp3 = (char*)0xb8000+width+pos; temp3 < (char*)0xb8000+width*height; temp3 += 2, temp2 += 2, pos += 2)
+     {
+        *temp2 = *temp3;
+        *temp3 = ' ';
+     }
+}
 void kprintf(const char *fmt, ...)
 {
 
@@ -158,7 +171,6 @@ void kprintf(const char *fmt, ...)
             if(fmt[i+1] == 'x')
             {
                 unsigned int num = va_arg(arg, unsigned int);
-                // check size?
                 char hnum[20];
                 intTOhexa(num, hnum, 16);
                 for(int j=0; j<stringlen(hnum); j++)
@@ -185,20 +197,32 @@ void kprintf(const char *fmt, ...)
     }
     va_end(arg);
     buffer[k]='\0';
+  
+  register char *temp1, *temp2;  
+  for(temp2 = (char*)0xb8001; temp2 < (char*)0xb8000+160*25; temp2 += 2)
+     *temp2 = 7;
 
- // note: function changes rsp, local stack variables can't be practically used
-  register char *temp1, *temp2;
+  if(pos >= width*height)
+  {   
+     /* Scroll: push all the lines on video address by one line upwards, discarding the first line */
+     memcopy();
 
-  for(temp2 = (char*)0xb8001; temp2 < (char*)0xb8000+160*25; temp2 += 2) *temp2 = 7 /* white */;
-  for(
-       temp1 = buffer, temp2 = (char*)0xb8000+pos;
-       *temp1;
-       temp1 += 1, temp2 += 2, pos+=2
-     )
-  { 
+     pos = width*height - width;
+     temp2 = (char*)0xb8000 + pos;
+  }else
+     temp2 = (char*)0xb8000+pos;  
+  
+  for(temp1 = buffer; *temp1; temp1 += 1,temp2 += 2,pos += 2)
+  {
      if(*temp1 == '\n')
      {
-        pos = pos + 160 - (pos%160)-2;
+        pos = pos + width - (pos % width)-2;
+        temp2 = (char*)0xb8000 + pos;
+     }else
+     if(*temp1 == '\r')
+     {
+        pos = pos - (pos % width)-2;
+        temp2 = (char*)0xb8000 + pos;
      }else
      {
         *temp2 = *temp1;
