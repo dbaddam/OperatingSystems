@@ -28,9 +28,9 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
 void boot(void)
 {
   // note: function changes rsp, local stack variables can't be practically used
-  register char *temp1, *temp2;
+  //register char *temp1, *temp2;
 
-  for(temp2 = (char*)0xb8001; temp2 < (char*)0xb8000+160*25; temp2 += 2) *temp2 = 7 /* white */;
+// for(temp2 = (char*)0xb8001; temp2 < (char*)0xb8000+160*25; temp2 += 2) *temp2 = 7 /* white */;
   __asm__(
     "cli;"
     "movq %%rsp, %0;"
@@ -44,10 +44,10 @@ void boot(void)
     (uint64_t*)&physbase,
     (uint64_t*)(uint64_t)loader_stack[4]
   );
-  for(
-    temp1 = "!!!!! start() returned !!!!!", temp2 = (char*)0xb8000;
+/* for(
+    temp1 = " !!! start() returned !!!", temp2 = (char*)0xb8000;
     *temp1;
     temp1 += 1, temp2 += 2
   ) *temp2 = *temp1;
-  while(1);
+ */ while(1);
 }
