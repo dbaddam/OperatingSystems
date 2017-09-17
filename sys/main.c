@@ -26,11 +26,15 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
       kprintf("Available Physical Memory [%p-%p]\n", smap->base, smap->base + smap->length);
     }
   }
-  kprintf("Remapping PIC\n");
-  picremap(MASTER_PIC_OFFSET, SLAVE_PIC_OFFSET);
-  kprintf("PIC remapped\n");
+
+  __asm__ __volatile__("int $0x20" :::);
+  __asm__ __volatile__("int $0x20" :::);
+  __asm__ __volatile__("int $0x20" :::);
+  __asm__ __volatile__("int $0x20" :::);
   kprintf("physfree %p\n", (uint64_t)physfree);
   kprintf("tarfs in [%p:%p]\n", &_binary_tarfs_start, &_binary_tarfs_end);
+
+  while(1);
 }
 
 void boot(void)
@@ -47,7 +51,9 @@ void boot(void)
     :"r"(&initial_stack[INITIAL_STACK_SIZE])
   );
   init_gdt();
+  picremap(MASTER_PIC_OFFSET, SLAVE_PIC_OFFSET);
   init_idt();
+  register_all_irqs();
   start(
     (uint32_t*)((char*)(uint64_t)loader_stack[3] + (uint64_t)&kernmem - (uint64_t)&physbase),
     (uint64_t*)&physbase,

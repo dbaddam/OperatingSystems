@@ -19,13 +19,12 @@ static inline uint8_t inb(uint16_t port)
 
    return sysret;
 }
-/*
+
 static inline void io_wait()
 {
    __asm__ __volatile__ ("jmp 1f\n\t"
                          "1:jmp 2f\n\t"
                          "2:");
 }
-*/
 
 #endif

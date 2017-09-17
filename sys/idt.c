@@ -1,10 +1,11 @@
 #include <sys/defs.h>
 #include <sys/idt.h>
+#include <sys/kprintf.h>
 
 #define MAX_IDT 256
 
 
-#define P        0xF0    /* Present */
+#define P        0x80    /* Present */
 #define NP       0x00    /* Not Present */
 #define DPL0     0x00
 #define S0       0x00
@@ -33,7 +34,7 @@ struct IDTEntry{
    uint8_t type_attr; // type and attributes
    uint16_t offset_2; // offset bits 16..31
    uint32_t offset_3; // offset bits 32..63
-   uint8_t zero2;     // unused, set to 0
+   uint32_t zero2;     // unused, set to 0
 }__attribute__((packed));
 typedef struct IDTEntry IDTEntry;
 
@@ -43,16 +44,49 @@ struct idtr_t {
 }__attribute__((packed));
 
  
-static IDTEntry idt[MAX_IDT] = {
- {0, 8, 0, 0, 0, 0, 0}
-};
+static IDTEntry idt[MAX_IDT];
 
-static struct idtr_t idtr = {sizeof(idt), (uint64_t)idt};
+static struct idtr_t idtr = {sizeof(idt)-1, (uint64_t)idt};
 
+
+void _x86_64_asm_lidt(struct idtr_t *idtr);
+
+void dummyitr()
+{
+    kprintf("dummyitr\n");
+}
 
 void init_idt()
 {
-   __asm__ __volatile__("lidt %0" 
+
+   int i;
+   for (i = 0;i < MAX_IDT;i++)
+   {
+       register_irq(i, (uint64_t) &dummyitr);
+   }
+
+  //_x86_64_asm_lidt(&idtr);
+   __asm__ __volatile__("cli\n\t"
+                        "lidt (%0)\n\t"
+                        "sti" 
                          : 
-                         : "m"(idtr)); 
+                         : "r"((uint64_t)(&idtr)));
 }
+
+void register_irq(unsigned char num, uint64_t fp)
+{
+    idt[num].offset_1 = (((uint64_t)fp) & (0x000000000000FFFF));
+    idt[num].selector = 8;
+    idt[num].zero1 = 0;
+    idt[num].type_attr = P|S0|DPL0|GINT32;
+    idt[num].offset_2 = (((uint64_t)fp>>16) & (0x000000000000FFFF));
+    idt[num].offset_3 = (((uint64_t)fp>>32) & (0x00000000FFFFFFFF));
+    idt[num].zero2 = 0;
+}
+
+void register_all_irqs()
+{
+   register_irq(0x20, (uint64_t)_isr_timer);
+   isr_timer_init();
+}
+
