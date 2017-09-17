@@ -31,7 +31,7 @@ void isr_timer()
       
    }
    //kprintf("Inside ISR_TIMER BORING\n");
-   picack(0); 
+   picack(TIMER_IRQ); 
 }
 
 void isr_timer_init()
