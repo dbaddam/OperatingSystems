@@ -27,13 +27,9 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
     }
   }
 
-  __asm__ __volatile__("int $0x20" :::);
-  __asm__ __volatile__("int $0x20" :::);
-  __asm__ __volatile__("int $0x20" :::);
-  __asm__ __volatile__("int $0x20" :::);
   kprintf("physfree %p\n", (uint64_t)physfree);
   kprintf("tarfs in [%p:%p]\n", &_binary_tarfs_start, &_binary_tarfs_end);
-
+  kprintf("");
   while(1);
 }
 
@@ -41,8 +37,8 @@ void boot(void)
 {
   // note: function changes rsp, local stack variables can't be practically used
   //register char *temp1, *temp2;
-
-// for(temp2 = (char*)0xb8001; temp2 < (char*)0xb8000+160*25; temp2 += 2) *temp2 = 7 /* white */;
+ register char *temp2;
+ for(temp2 = (char*)0xb8001; temp2 < (char*)0xb8000+160*25; temp2 += 2) *temp2 = 7 /* white */;
   __asm__(
     "cli;"
     "movq %%rsp, %0;"

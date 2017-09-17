@@ -53,7 +53,7 @@ void _x86_64_asm_lidt(struct idtr_t *idtr);
 
 void dummyitr()
 {
-    kprintf("dummyitr\n");
+//    kprintf("dummyitr\n");
 }
 
 void init_idt()

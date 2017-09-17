@@ -13,24 +13,26 @@ void isr_timer()
    subsec++;
    if (subsec == 10000)
    {
-      char *p;
-      char *temp2;
-      char* s = "Time since boot:";
-      char str[20] ;
+      char str[25] ;
       secs++;
       subsec = 0;
-      longTOhexa(secs, str, 10);
-
-      kprintf("Elasped sec - %d\n", secs);
-
-      for (temp2 = (char*)0xb8000+150*25, p = s; *p && temp2 < (char*)0xb8000+25; temp2 += 2, p++)
-        *temp2 = *p;
-      for (p = str; *p && temp2 < (char*)0xb8000+25; temp2 += 2, p++)
-        *temp2 = *p;
-
       
+      // convert the secs in int to string and add 's' to it, Ex: "23s".
+      intTOstring(secs, str, 10);
+      str[stringlen(str)] = 's';
+      str[stringlen(str)+1] = '\0';
+
+      char *temp2, *temp1;
+      temp2 = (char*)0xb8000+80*45;
+      for(temp1 = "Time since boot: " ; *temp1; temp1 += 1,temp2 += 2)
+      {   
+        *temp2 = *temp1;    
+      }  
+      for(temp1 = str; *temp1; temp1 += 1,temp2 += 2)
+      {
+        *temp2 = *temp1;    
+      }
    }
-   //kprintf("Inside ISR_TIMER BORING\n");
    picack(0); 
 }
 

@@ -199,8 +199,8 @@ void kprintf(const char *fmt, ...)
     buffer[k]='\0';
   
   register char *temp1, *temp2;  
-  for(temp2 = (char*)0xb8001; temp2 < (char*)0xb8000+140*25; temp2 += 2)
-     *temp2 = 7;
+//  for(temp2 = (char*)0xb8001; temp2 < (char*)0xb8000+160*25; temp2 += 2)
+//     *temp2 = 7;
 
   if(pos >= width*height)
   {   
