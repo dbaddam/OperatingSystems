@@ -18,7 +18,8 @@ void isr_timer()
       subsec = 0;
       
       // convert the secs in int to string and add 's' to it, Ex: "23s".
-      intTOstring(secs, str, 10);
+      // intTOstring(secs, str, 10);
+      unsignedLongTOstring(secs, str, 10);
       str[stringlen(str)] = 's';
       str[stringlen(str)+1] = '\0';
 
@@ -33,7 +34,7 @@ void isr_timer()
         *temp2 = *temp1;    
       }
    }
-   picack(0); 
+   picack(TIMER_IRQ); 
 }
 
 void isr_timer_init()

@@ -1,5 +1,6 @@
 #include <sys/defs.h>
 #include <sys/idt.h>
+#include <sys/pic.h>
 #include <sys/kprintf.h>
 
 #define MAX_IDT 256
@@ -86,7 +87,8 @@ void register_irq(unsigned char num, uint64_t fp)
 
 void register_all_irqs()
 {
-   register_irq(0x20, (uint64_t)_isr_timer);
+   register_irq(MASTER_PIC_OFFSET + TIMER_IRQ, (uint64_t)_isr_timer);
    isr_timer_init();
+   register_irq(MASTER_PIC_OFFSET + KEYBOARD_IRQ, (uint64_t)_isr_keyboard);
 }
 

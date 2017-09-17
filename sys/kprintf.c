@@ -57,6 +57,23 @@ void intTOstring(int number, char *p, int base)
     p[i] = '\0';
     strrev(p);
 }
+void unsignedLongTOstring(unsigned long number, char *p, int base)
+{
+    int i=0;
+    if(number == 0)
+    {   
+        p[i++]='0';
+        p[i]='\0';
+    }   
+    while(number !=0)
+    {   
+        int rem = number % base;
+        p[i++] = rem + '0';
+        number = number/base;
+    }   
+    p[i] = '\0';
+    strrev(p);
+}
 void intTOhexa( unsigned int number, char *p, int base)
 {   
     int i=0;
