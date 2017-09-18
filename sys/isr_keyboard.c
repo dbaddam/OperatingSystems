@@ -95,25 +95,29 @@ void isr_keyboard()
       //if control key is pressed, set ctrl variable
       if(c == 0x1D || c == 0xE0)
       {
-         ctrl = 1;         
+         ctrl = 1;
+         goto end;         
       } 
 
       //if control key is released, make ctrl 0
       if(c == 0xE0 || c == 0x9D)
       {
          ctrl = 0;
+         goto end;         
       }
 
       //if left shift  or right shift is released
       if(c == 0xAA || c == 0xB6)
       {   
          shift = 0;
+         goto end;         
       }
       
       //if left shift or right shift is pressed   
       if(c == 0x2A || c == 0x36)
       {   
          shift = 1;
+         goto end;         
       }
 
    if(c < 58)
@@ -128,5 +132,6 @@ void isr_keyboard()
       }
    }
 
+end:
    picack(KEYBOARD_IRQ); 
 }
