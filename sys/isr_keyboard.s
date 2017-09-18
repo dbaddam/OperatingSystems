@@ -3,6 +3,7 @@
 
 _isr_keyboard:
    pushq %rax
+#   pushq %rbx
    pushq %rcx
    pushq %rdx
    pushq %r8
@@ -18,5 +19,6 @@ _isr_keyboard:
    popq %r8
    popq %rdx
    popq %rcx
+#   popq %rbx
    popq %rax
    iretq

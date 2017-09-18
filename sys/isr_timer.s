@@ -4,6 +4,7 @@
 
 _isr_timer_init:
    pushq %rax
+#   pushq %rbx
    pushq %rcx
    pushq %rdx
    pushq %r8
@@ -19,12 +20,14 @@ _isr_timer_init:
    popq %r8
    popq %rdx
    popq %rcx
+#   popq %rbx
    popq %rax
    retq
   
 
 _isr_timer:
    pushq %rax
+#   pushq %rbx
    pushq %rcx
    pushq %rdx
    pushq %r8
@@ -40,5 +43,6 @@ _isr_timer:
    popq %r8
    popq %rdx
    popq %rcx
+#   popq %rbx
    popq %rax
    iretq
