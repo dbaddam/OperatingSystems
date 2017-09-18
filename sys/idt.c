@@ -88,7 +88,7 @@ void register_irq(unsigned char num, uint64_t fp)
 void register_all_irqs()
 {
    register_irq(MASTER_PIC_OFFSET + TIMER_IRQ, (uint64_t)_isr_timer);
-   isr_timer_init();
+   //isr_timer_init();
    register_irq(MASTER_PIC_OFFSET + KEYBOARD_IRQ, (uint64_t)_isr_keyboard);
 }
 
