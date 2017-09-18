@@ -1,6 +1,5 @@
 #include <sys/kprintf.h>
-#include <stdio.h>
-#include <stdarg.h>
+#include <sys/stdarg.h>
 
 typedef int boolean;
 
