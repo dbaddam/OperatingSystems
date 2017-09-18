@@ -14,13 +14,15 @@ void isr_timer()
    if (subsec == 10000)
    {
       char str[25] ;
+      int  len;
       secs++;
       subsec = 0;
       
       // convert the secs in int to string and add 's' to it, Ex: "23s".
       unsignedLongTOstring(secs, str, 10);
-      str[stringlen(str)] = 's';
-      str[stringlen(str)+1] = '\0';
+      len = stringlen(str);
+      str[len] = 's';
+      str[len+1] = '\0';
 
       char *temp2, *temp1;
       temp2 = (char*)0xb8000+80*45;
