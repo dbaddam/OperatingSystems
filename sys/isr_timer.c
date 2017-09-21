@@ -11,7 +11,7 @@ void isr_timer()
 {
 
    subsec++;
-   if (subsec == 10000)
+   if (subsec == 18)
    {
       char str[25] ;
       int  len;
