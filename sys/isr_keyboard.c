@@ -23,6 +23,8 @@ void printChar(char c)
 
 void isr_keyboard()
 {
+   //pic_irq_set_mask(KEYBOARD_IRQ);
+   //pic_irq_set_mask(TIMER_IRQ | KEYBOARD_IRQ);
    unsigned int c = inb(KEYBOARD_IN_PORT);
   
   /* Reference:
@@ -133,5 +135,7 @@ void isr_keyboard()
    }
 
 end:
+   //pic_irq_clear_mask(TIMER_IRQ | KEYBOARD_IRQ);
+   //pic_irq_clear_mask(KEYBOARD_IRQ);
    picack(KEYBOARD_IRQ); 
 }

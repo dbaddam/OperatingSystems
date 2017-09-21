@@ -29,8 +29,8 @@ static __inline void outl(uint16_t port, uint32_t val)
 
 static __inline uint32_t inl(uint16_t port)
 {
-   uint8_t sysret;
-   __asm__ __volatile__ ("inb %1, %0" 
+   uint32_t sysret;
+   __asm__ __volatile__ ("inl %1, %0" 
                           : "=a"(sysret)
                           : "Nd"(port));
 

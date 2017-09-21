@@ -65,3 +65,32 @@ void picack(unsigned char irq)
    } 
 }
 
+void pic_irq_set_mask(unsigned char irq_line)
+{
+   uint16_t port;
+   uint8_t value;
+ 
+   if (irq_line < 8) {
+      port = PIC1_DATA;
+   } else {
+      port = PIC2_DATA;
+      irq_line -= 8;
+   }
+   value = inb(port) | (1 << irq_line);
+   outb(port, value);        
+}
+ 
+void pic_irq_clear_mask(unsigned char irq_line)
+{
+   uint16_t port;
+   uint8_t value;
+
+   if(irq_line < 8) {
+      port = PIC1_DATA;
+   } else {
+      port = PIC2_DATA;
+      irq_line -= 8;
+   }
+   value = inb(port) & ~(1 << irq_line);
+   outb(port, value);        
+}

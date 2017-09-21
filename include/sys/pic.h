@@ -8,5 +8,7 @@
 
 void picremap(int moffset, int soffset);
 void picack(unsigned char irq);
+void pic_irq_set_mask(unsigned char irq_line);
+void pic_irq_clear_mask(unsigned char irq_line);
 
 #endif

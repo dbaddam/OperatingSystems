@@ -10,6 +10,7 @@ uint64_t subsec = 0;
 void isr_timer()
 {
 
+   //pic_irq_set_mask(TIMER_IRQ | KEYBOARD_IRQ);
    subsec++;
    if (subsec == 18)
    {
@@ -35,6 +36,8 @@ void isr_timer()
         *temp2 = *temp1;    
       }
    }
+   //pic_irq_clear_mask(TIMER_IRQ | KEYBOARD_IRQ);
+   //pic_irq_clear_mask(TIMER_IRQ);
    picack(TIMER_IRQ); 
 }
 
