@@ -9,6 +9,15 @@
 #define REG_UPPER_MASK    0xFFFF0000
 #define REG_INNER_MASK    0x0000FFFF
 
+#define PCI_VENDOR(b,s,f)    ((pci_config_read_register(b, s, f, 0)) & 0xFFFF)
+#define PCI_CLASS(b,s,f)     ((uint8_t)(((pci_config_read_register(b, s, f, 8)) & 0xFF000000) >> 24))
+#define PCI_SUBCLASS(b,s,f)  ((uint8_t)(((pci_config_read_register(b, s, f, 8)) & 0x00FF0000) >> 16))
+#define PCI_PROGIF(b,s,f)    ((uint8_t)(((pci_config_read_register(b, s, f, 8)) & 0x0000FF00) >> 8))
+#define PCI_BAR4(b,s,f)      (pci_config_read_register(b, s, f, 0x20))
+#define PCI_BAR5(b,s,f)      (pci_config_read_register(b, s, f, 0x24))
+
+void* ahci_abar;
+
 uint32_t pci_config_read_register(uint32_t bus, uint32_t slot,
                                uint32_t func, uint32_t offset)
 {
@@ -19,93 +28,77 @@ uint32_t pci_config_read_register(uint32_t bus, uint32_t slot,
    return inl(CONFIG_DATA);
 }
 
-uint16_t pci_vendor(uint8_t bus, uint8_t slot)
+void pci_config_write_register(uint32_t bus, uint32_t slot,
+                                   uint32_t func, uint32_t offset,
+                                   uint32_t data)
 {
-   uint16_t x = (pci_config_read_register(bus, slot, 0, 0)) & 0xFFFF;
+   uint32_t address = (bus << 16) | (slot << 11) | (func << 8) |
+                      (offset & 0xfc) | CONFIG_ENABLE_BIT;
 
-   //kprintf("vendor - %d",(int32_t)x);
-
-   return x;
+   outl(CONFIG_ADDRESS, address);
+   outl(CONFIG_DATA, data);
 }
 
-uint8_t pci_class(uint8_t bus, uint8_t slot)
+void* pci_abar(uint8_t bus, uint8_t slot, uint8_t fn)
 {
-   uint8_t x = (uint8_t)(((pci_config_read_register(bus, slot, 0, 8)) 
-                           & 0xFF000000) >> 24);
-   return x;
-}
 
-uint8_t pci_subclass(uint8_t bus, uint8_t slot)
-{
-   uint8_t x = (uint8_t)(((pci_config_read_register(bus, slot, 0, 8)) 
-                           & 0x00FF0000) >> 16);
-   return x;
-}
+//   int i;
+ /*
+   kprintf("bar - %x\n", pci_config_read_register(bus, slot, fn, 0x10));
+   kprintf("bar - %x\n", pci_config_read_register(bus, slot, fn, 0x14));
+   kprintf("bar - %x\n", pci_config_read_register(bus, slot, fn, 0x18));
+   kprintf("bar - %x\n", pci_config_read_register(bus, slot, fn, 0x1C));
+   kprintf("bar - %x\n", pci_config_read_register(bus, slot, fn, 0x20));
+   kprintf("bar - %x\n", pci_config_read_register(bus, slot, fn, 0x24));
+*/
+   uint64_t bar4 = PCI_BAR4(bus, slot, fn);
+   uint64_t bar5 = PCI_BAR5(bus, slot, fn);
 
-uint8_t pci_progif(uint8_t bus, uint8_t slot)
-{
-   uint8_t x = (uint8_t)(((pci_config_read_register(bus, slot, 0, 8)) 
-                           & 0x0000FF00) >> 8);
-   return x;
+   pci_config_write_register(bus, slot, fn, 0x24, 0x3fff0000);
+  /* 
+   kprintf("**********************\n");
+   for ( i = 0;i <= 0x3c; i+=4)
+      kprintf ("0x%x -- 0x%x\n", i, pci_config_read_register(bus, slot, fn, i));
+   kprintf("**********************\n");
+*/
+   bar5 = PCI_BAR5(bus, slot, fn);
+
+   return (void*) bar5;
+   return (void*)((bar4 & 0xFFFFFFF0) + 
+                  ((bar5 & 0xFFFFFFFF)<< 32));
 }
 
 uint16_t pci_enum()
 {
    uint8_t bus;
    uint8_t device;
-//   uint8_t class;
-//   uint8_t subclass;
-//   uint8_t progif;
+   uint8_t fn;
 
+   //kprintf("Walking through PCI config space\n");
    for (bus = 0; bus < 255;bus++)
       for (device = 0; device < 32; device++)
-         if (pci_vendor(bus, device) != 0xFFFF &&
-             pci_class(bus, device) == 0x01 &&
-             pci_subclass(bus, device) == 0x06 &&
-             pci_progif(bus, device) == 0x01)
+         if (PCI_VENDOR(bus, device, 0) != 0xFFFF &&
+             PCI_CLASS(bus, device, 0) == 0x01 &&
+             PCI_SUBCLASS(bus, device, 0) == 0x06 /*&&
+             PCI_PROGIF(bus, device) == 0x01*/)
          {
-            kprintf("bus - %d, device - %d\n", (int32_t)bus, (int32_t)device);
-            kprintf("AHCI controller found!!!! :)\n");
+            ahci_abar = pci_abar(bus, device, 0);
+            //kprintf("bus - %d, device - %d\n", (int32_t)bus, (int32_t)device);
+	    //kprintf("ABAR - %p\n", ahci_abar);
+            //kprintf("AHCI controller found!!!! :)\n");
+
+            for (fn = 1; fn < 8;fn++)
+              if (PCI_VENDOR(bus, device, fn) != 0xFFFF)
+                 kprintf("Multi-function AHCI.. Please re-configure\n");
             
          }
 
-   kprintf("Enumeration done\n");
+   //kprintf("PCI space enumeration done\n");
 
    return 0;
-} 
-/*
-uint16_t pciConfigReadWord (uint8_t bus, uint8_t slot,
-                             uint8_t func, uint8_t offset)
-{
-    uint32_t address;
-    uint32_t lbus  = (uint32_t)bus;
-    uint32_t lslot = (uint32_t)slot;
-    uint32_t lfunc = (uint32_t)func;
-    uint16_t tmp = 0;
- 
-    address = (uint32_t)((lbus << 16) | (lslot << 11) |
-              (lfunc << 8) | (offset & 0xfc) | ((uint32_t)0x80000000));
- 
-    outl(0xCF8, address);
-    tmp = (uint16_t)((inl(0xCFC) >> ((offset & 2) * 8)) & 0xffff);
-    return (tmp);
 }
- uint16_t pciCheckVendor(uint8_t bus, uint8_t slot)
- {
-    uint16_t vendor;//, device;
-    uint16_t class;
-    uint8_t progif;
 
-    if ((vendor = pciConfigReadWord(bus,slot,0,0)) != 0xFFFF) {
-       kprintf("bus - %d, slot - %d\n", bus, slot);
-       class = pciConfigReadWord(bus,slot,0,10);
-       kprintf("class - %x\n", class);
-       class = pciConfigReadWord(bus,slot,0,8);
-       kprintf("full  - %x\n", class);
-       progif = (uint8_t)((pciConfigReadWord(bus,slot,0,8) & 0xFF00) >> 8);
-       kprintf("progif - %x\n", progif);
-    } 
-    return (vendor);
- }
-*/
-
+void* pci_ahci_abr()
+{
+   return ahci_abar;
+} 

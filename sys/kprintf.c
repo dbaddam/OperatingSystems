@@ -7,7 +7,7 @@ typedef int boolean;
 #define false 0
 #define MAX_BUFFER 4096
 #define width 160
-#define height 15
+#define height 20
 
 int stringlen(const char *a) 
 {

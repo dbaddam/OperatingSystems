@@ -4,5 +4,6 @@
 #include <sys/defs.h>
 
 uint16_t pci_enum();
+void* pci_ahci_abr();
 
 #endif

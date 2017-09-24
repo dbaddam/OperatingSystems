@@ -12,6 +12,10 @@
 #define HBA_PxCMD_CR   (1U << 15)
 #define HBA_PxIS_TFES  (1U << 30)
 
+#define HBA_PORT_DET_PRESENT 3
+#define HBA_PORT_IPM_ACTIVE 1
+
+#define AHCI_DEV_NULL   0x00000000  // SATA drive
 #define AHCI_DEV_SATA   0x00000101  // SATA drive
 #define AHCI_DEV_SATAPI 0xEB140101  // SATAPI drive
 #define AHCI_DEV_SEMB   0xC33C0101  // Enclosure management bridge
@@ -29,6 +33,9 @@
 
 #define MAX_CMD_SLOT_CNT 32
 #define MAX_PORT_CNT     32
+
+#define ATA_CMD_READ_DMA_EX   0x25
+#define ATA_CMD_WRITE_DMA_EX  0x35
 
 typedef enum {
   FIS_TYPE_REG_H2D = 0x27,   // Register FIS - host to device
@@ -333,5 +340,7 @@ typedef volatile struct {
   // 0x100 - 0x10FF, Port control registers
   hba_port_t ports[MAX_PORT_CNT]; // 1 ~ 32
 }__attribute__((__packed__)) hba_mem_t;
+
+void ahci();
 
 #endif
