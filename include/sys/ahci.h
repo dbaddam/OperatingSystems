@@ -21,6 +21,7 @@
 #define AHCI_DEV_SEMB   0xC33C0101  // Enclosure management bridge
 #define AHCI_DEV_PM     0x96690101  // Port multiplier
 
+
 #define ATA_STATUS_ERR  0x01 // Indicates an error occurred. Send a new command to clear it (or nuke it with a Software Reset).
 #define ATA_STATUS_DRQ  0x08 // Set when the drive has PIO data to transfer, or is ready to accept PIO data.
 #define ATA_STATUS_SRV  0x10 // Overlapped Mode Service Request.
@@ -29,11 +30,14 @@
 #define ATA_STATUS_BSY  0x80 // Indicates the drive is preparing to send/receive data (wait for it to clear).
                              // In case of 'hang' (it never clears), do a software reset.
 
+#define ATA_DEV_BUSY    0x80
+#define ATA_DEV_DRQ     0x08
+
 #define CMD_FIS_DEV_LBA (1U << 6)
 
 #define MAX_CMD_SLOT_CNT 32
 #define MAX_PORT_CNT     32
-#define MAX_PRDT_CNT     8
+#define MAX_PRDT_CNT     1
 
 #define ATA_CMD_READ_DMA_EX   0x25
 #define ATA_CMD_WRITE_DMA_EX  0x35

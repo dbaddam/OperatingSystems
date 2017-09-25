@@ -26,14 +26,14 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
       kprintf("Available Physical Memory [%p-%p]\n", smap->base, smap->base + smap->length);
     }
   }
+  kprintf("physfree %p\n", (uint64_t)physfree);
+  kprintf("tarfs in [%p:%p]\n", &_binary_tarfs_start, &_binary_tarfs_end);
+
   picremap(MASTER_PIC_OFFSET, SLAVE_PIC_OFFSET);
   init_idt();
   register_all_irqs();
   pci_enum();
   ahci();
-
-  kprintf("physfree %p\n", (uint64_t)physfree);
-  kprintf("tarfs in [%p:%p]\n", &_binary_tarfs_start, &_binary_tarfs_end);
   while(1);
 }
 
