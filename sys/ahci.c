@@ -6,7 +6,8 @@
 #define	AHCI_BASE    0x400000 /* 4M */
 //#define	AHCI_BASE    0x8000000 /* 4M */
 
-int32_t ahciport = -1;
+hba_mem_t* abar;
+int32_t    ahciportno = -1;
 
 void memset(void* p, int32_t c, int32_t n)
 {
@@ -16,7 +17,7 @@ void memset(void* p, int32_t c, int32_t n)
       *x = c; 
 }
 
-void ahci_probe(hba_mem_t* abar)
+void ahci_probe()
 {
    uint32_t pi = abar->pi;
    uint32_t i;
@@ -51,11 +52,21 @@ void ahci_probe(hba_mem_t* abar)
               break;
 	}
 
-        ahciport = i;
+        ahciportno = i;
         return;
       }
    }
    kprintf("No SATA drive found\n");
+}
+
+void ahci_hba_reset()
+{
+   abar->ghc |= HBA_GHC_HR;
+
+   while(abar->ghc & HBA_GHC_HR);
+   
+   abar->ghc |= (HBA_GHC_AE | HBA_GHC_IE);
+   kprintf("HBA reset complete\n");
 }
 
 void ahci_start_cmd(hba_port_t* port)
@@ -88,11 +99,17 @@ void ahci_port_rebase(hba_port_t *port, int32_t portno)
    uint32_t i;
 
    kprintf("Trying to stop\n");
-   //ahci_stop_cmd(port);
+   ahci_stop_cmd(port);
    kprintf("Stopped\n");
+
+   /* 1K per port  
+    * Each port has 32 command headers.
+    * Each header is worth 32 bytes, hence 1K per port*/
    port->clb  = AHCI_BASE + (portno << 10);
    memset((void*)(port->clb), 0, 1024);
 
+   /* FIS base adresses start after all the ports
+    * Each FIS entry is worth 256 bytes. 8K for all the FISs*/
    port->fb  = AHCI_BASE + (32<<10) + (portno<<8); 
    memset((void*)(port->fb), 0, 256);
 
@@ -100,11 +117,22 @@ void ahci_port_rebase(hba_port_t *port, int32_t portno)
 
    for (i = 0; i < 32; i++)
    {
-      cmdheader[i].ctba  = AHCI_BASE + (40<<10) + (portno <<13) + (i<<8);
-      memset((void*)(cmdheader[i].ctba), 0, 256);
+      cmdheader[i].prdtl = MAX_PRDT_CNT;
+      /* Each command header length is sizeof(hba_cmd_tbl_t)(call it tsize),
+       * make sure you choose MAX_PRDT_CNT which would make cmdheader 
+       * 128 aligned to make life easier. Now, each port has 32 
+       * command headers, so the 0th command header of a port start from
+       * portno*32*tsize after the FIS base addresses. Now, the i-th header
+       * of this port is at i*tsize away from 0th header*/
+      cmdheader[i].ctba  = AHCI_BASE + (40<<10) + 
+                           (portno* (32 * sizeof(hba_cmd_tbl_t))) + 
+                           (i * (sizeof(hba_cmd_tbl_t)));
+
+      memset((void*)(cmdheader[i].ctba), 0, sizeof(hba_cmd_tbl_t));
    }  
    kprintf("Trying to start\n");
-   //ahci_start_cmd(port); 
+   ahci_start_cmd(port);
+   //port->serr_rwc = 0xFFFF//HBA_PxSERR_ALL; 
    kprintf("Started\n");
 }
 
@@ -115,21 +143,21 @@ void ahci_port_rebase(hba_port_t *port, int32_t portno)
 int find_cmdslot(hba_port_t *port)
 {
   int i;
-	// If not set in SACT and CI, the slot is free
-	uint32_t slots = (port->sact | port->ci);
-	for (i=0; i<32; i++)
-	{
-		if ((slots&1) == 0)
-			return i;
-		slots >>= 1;
-	}
-	kprintf("Cannot find free command list entry\n");
-	return -1;
+  // If not set in SACT and CI, the slot is free
+   uint32_t slots = (port->sact | port->ci);
+   for (i=0; i<32; i++)
+   {
+      if ((slots&1) == 0)
+         return i;
+      slots >>= 1;
+   }
+   kprintf("Cannot find free command list entry\n");
+   return -1;
 }
 
 int read(hba_port_t *port, uint64_t startl, uint64_t starth, uint64_t count, uint64_t *buf)
 {
-	port->is_rwc = 0xffffffff;		// Clear pending interrupt bits
+	port->is_rwc = 0;//TODO;osdev says different 0xffffffff;		// Clear pending interrupt bits
 	int spin = 0; // Spin lock timeout counter
 	int slot = find_cmdslot(port);
         int i;
@@ -138,7 +166,7 @@ int read(hba_port_t *port, uint64_t startl, uint64_t starth, uint64_t count, uin
  
 	hba_cmd_header_t *cmdheader = (hba_cmd_header_t*)port->clb;
 	cmdheader += slot;
-	cmdheader->cfl = sizeof(fis_reg_h2d_t)/sizeof(uint64_t);	// Command FIS size
+	cmdheader->cfl = sizeof(fis_reg_h2d_t)/sizeof(uint32_t);	// Command FIS size
 	cmdheader->w = 0;		// Read from device
 	cmdheader->prdtl = (int32_t)((count-1)>>4) + 1;	// PRDT entries count
  
@@ -217,16 +245,23 @@ int read(hba_port_t *port, uint64_t startl, uint64_t starth, uint64_t count, uin
  
 void ahci()
 {
-    hba_mem_t* abar = (hba_mem_t *)pci_ahci_abr();
+    hba_port_t* port;
+    abar = (hba_mem_t *)pci_ahci_abr();
 
-    ahci_probe(abar);
-    kprintf("Port rebasing\n");
-    ahci_port_rebase(&abar->ports[ahciport], ahciport);
-    ahci_port_rebase(&abar->ports[ahciport+1], ahciport+1);
+    ahci_probe();
+    //ahci_hba_reset();
+
+    port = &abar->ports[ahciportno];
+    //ahci_port_rebase(port, ahciportno);
+    //kprintf("Port rebasing done...\n");
+    port->cmd |= HBA_PxCMD_FRE;
+    port->cmd |= HBA_PxCMD_ST; 
+    kprintf("irc = %x\n",port->is_rwc); 
+    kprintf("ie = %x\n",port->ie); 
     kprintf("Start reading\n");
     char buf[1024];
-    memset((void*) buf,0,1024);
-    read(&abar->ports[ahciport+1], 20, 20, 2, (uint64_t *)buf);
+    memset((void*) buf, 0, 1024);
+    read(port, 0, 1, 2, (uint64_t *)buf);
     int i;
 
     kprintf("Start printing\n");

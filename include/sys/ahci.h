@@ -33,9 +33,11 @@
 
 #define MAX_CMD_SLOT_CNT 32
 #define MAX_PORT_CNT     32
+#define MAX_PRDT_CNT     8
 
 #define ATA_CMD_READ_DMA_EX   0x25
 #define ATA_CMD_WRITE_DMA_EX  0x35
+
 
 typedef enum {
   FIS_TYPE_REG_H2D = 0x27,   // Register FIS - host to device
@@ -241,7 +243,7 @@ typedef struct {
   // 0x50
   uint8_t rsv[48];           // Reserved
   // 0x80
-  hba_prdt_entry_t prdt_entry[1]; // Physical region descriptor table entries, 0 ~ 65535
+  hba_prdt_entry_t prdt_entry[MAX_PRDT_CNT]; // Physical region descriptor table entries, 0 ~ 65535
 }__attribute__((__packed__)) __attribute__((aligned(128))) hba_cmd_tbl_t;
 
 /* Command Header */
