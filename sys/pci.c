@@ -45,7 +45,8 @@ void* pci_abar(uint8_t bus, uint8_t slot, uint8_t fn)
 {
    uint64_t bar5 = PCI_BAR5(bus, slot, fn);
 
-   pci_config_write_register(bus, slot, fn, 0x24, AHCI_BASE);
+   kprintf("bar5 - %x\n", bar5);
+   //pci_config_write_register(bus, slot, fn, 0x24, AHCI_BASE);
    bar5 = PCI_BAR5(bus, slot, fn);
 
    return (void*) bar5;
@@ -60,19 +61,16 @@ uint16_t pci_enum()
    kprintf("Walking through PCI config space...\n");
    for (bus = 0; bus < 255;bus++)
       for (device = 0; device < 32; device++)
-         if (PCI_VENDOR(bus, device, 0) != 0xFFFF &&
-             PCI_CLASS(bus, device, 0) == 0x01 &&
-             PCI_SUBCLASS(bus, device, 0) == 0x06 /*&&
-             PCI_PROGIF(bus, device) == 0x01*/)
-         {
-            ahci_abar = pci_abar(bus, device, 0);
-            kprintf("AHCI controller detected\n");
-
-            for (fn = 1; fn < 8;fn++)
-              if (PCI_VENDOR(bus, device, fn) != 0xFFFF)
-                 kprintf("Multi-function AHCI.. Please re-configure\n");
-            
-         }
+         for (fn = 0; fn < 8; fn++)
+            if (PCI_VENDOR(bus, device, 0) != 0xFFFF &&
+                PCI_CLASS(bus, device, 0) == 0x01 &&
+                PCI_SUBCLASS(bus, device, 0) == 0x06 /*&&
+                PCI_PROGIF(bus, device) == 0x01*/)
+            {
+               ahci_abar = pci_abar(bus, device, 0);
+               kprintf("AHCI controller detected\n");
+               break;
+            }
 
    return 0;
 }
