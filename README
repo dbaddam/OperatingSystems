@@ -1,4 +1,3 @@
--To set an environment variable 'foo' to 'bar' in sbush, use
-  export foo=bar
-- sbush doesn't support environment variable expansion. 
-  '$' doesn't mean anything to sbush.
+-wp3 works on qemu completely.
+-On the lenovo machines, we were able to detect AHCI controller but not
+ SATA drives.
