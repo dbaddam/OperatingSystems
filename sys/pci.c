@@ -49,7 +49,8 @@ void* pci_abar(uint8_t bus, uint8_t slot, uint8_t fn)
 {
    uint64_t bar5 = PCI_BAR5(bus, slot, fn);
 
-   pci_config_write_register(bus, slot, fn, 0x24, AHCI_BASE);
+   kprintf("bar5 - %x\n", bar5);
+   //pci_config_write_register(bus, slot, fn, 0x24, AHCI_BASE);
    bar5 = PCI_BAR5(bus, slot, fn);
 
    return (void*) bar5;
