@@ -25,7 +25,7 @@
  */
 
 #include <sys/cdefs.h>
-__FBSDID("$FreeBSD$");
+__FBSDID("$FreeBSD: release/11.0.0/sys/boot/i386/libi386/elf64_freebsd.c 277215 2015-01-15 16:27:20Z royger $");
 
 #define __ELF_WORD_SIZE 64
 #include <sys/param.h>
@@ -51,12 +51,17 @@ struct file_format amd64_elf_obj = { elf64_obj_loadfile, elf64_obj_exec };
 #define PG_U	0x004
 #define PG_PS	0x080
 
+//#define GB (1U
+
 typedef u_int64_t p4_entry_t;
 typedef u_int64_t p3_entry_t;
 typedef u_int64_t p2_entry_t;
 extern p4_entry_t PT4[];
 extern p3_entry_t PT3[];
-extern p2_entry_t PT2[];
+extern p2_entry_t PT20[];
+extern p2_entry_t PT21[];
+extern p2_entry_t PT22[];
+extern p2_entry_t PT23[];
 
 u_int32_t entry_hi;
 u_int32_t entry_lo;
@@ -75,7 +80,7 @@ elf64_exec(struct preloaded_file *fp)
     Elf_Ehdr 			*ehdr;
     vm_offset_t			modulep, kernend;
     int				err;
-    int				i;
+    unsigned int		i;
 
     if ((md = file_findmetadata(fp, MODINFOMD_ELFHDR)) == NULL)
 	return(EFTYPE);
@@ -87,7 +92,10 @@ elf64_exec(struct preloaded_file *fp)
 
     bzero(PT4, PAGE_SIZE);
     bzero(PT3, PAGE_SIZE);
-    bzero(PT2, PAGE_SIZE);
+    bzero(PT20, PAGE_SIZE);
+    bzero(PT21, PAGE_SIZE);
+    bzero(PT22, PAGE_SIZE);
+    bzero(PT23, PAGE_SIZE);
 
     /*
      * This is kinda brutal, but every single 1GB VM memory segment points to
@@ -98,13 +106,27 @@ elf64_exec(struct preloaded_file *fp)
 	PT4[i] = (p4_entry_t)VTOP((uintptr_t)&PT3[0]);
 	PT4[i] |= PG_V | PG_RW | PG_U;
 
-	/* Each slot of the level 3 pages points to the same level 2 page */
-	PT3[i] = (p3_entry_t)VTOP((uintptr_t)&PT2[0]);
+	/* Each slot of the level 3 pages points to the 3 diff level 2 pages */
+	if (i %4 == 0)
+	   PT3[i] = (p3_entry_t)VTOP((uintptr_t)&PT20[0]);
+	else if (i %4 == 1)
+	   PT3[i] = (p3_entry_t)VTOP((uintptr_t)&PT21[0]);
+	else if (i %4 == 2)
+	   PT3[i] = (p3_entry_t)VTOP((uintptr_t)&PT22[0]);
+	else if (i %4 == 3)
+	   PT3[i] = (p3_entry_t)VTOP((uintptr_t)&PT23[0]);
+
 	PT3[i] |= PG_V | PG_RW | PG_U;
 
 	/* The level 2 page slots are mapped with 2MB pages for 1GB. */
-	PT2[i] = i * (2 * 1024 * 1024);
-	PT2[i] |= PG_V | PG_RW | PG_PS | PG_U;
+	PT20[i] =                 i * (2 * 1024 * 1024);
+	PT21[i] =  ((unsigned long)(1 << 30))    + i * (2 * 1024 * 1024);
+	PT22[i] = (((unsigned long)(1 << 30))*2) + i * (2 * 1024 * 1024);
+	PT23[i] = (((unsigned long)(1 << 30))*3) + i * (2 * 1024 * 1024);
+	PT20[i] |= PG_V | PG_RW | PG_PS | PG_U;
+	PT21[i] |= PG_V | PG_RW | PG_PS | PG_U;
+	PT22[i] |= PG_V | PG_RW | PG_PS | PG_U;
+	PT23[i] |= PG_V | PG_RW | PG_PS | PG_U;
     }
 
     entry_lo = ehdr->e_entry & 0xffffffff;

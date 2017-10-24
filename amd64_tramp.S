@@ -23,7 +23,7 @@
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  *
- * $FreeBSD$
+ * $FreeBSD: release/11.0.0/sys/boot/i386/libi386/amd64_tramp.S 298826 2016-04-30 00:26:38Z pfg $
  */
 
 /*
@@ -50,8 +50,17 @@ PT4:
 	.globl	PT3
 PT3:
 	.space	0x1000
-	.globl	PT2
-PT2:
+	.globl	PT20
+PT20:
+	.space	0x1000
+	.globl	PT21
+PT21:
+	.space	0x1000
+	.globl	PT22
+PT22:
+	.space	0x1000
+	.globl	PT23
+PT23:
 	.space	0x1000
 
 gdtdesc:
