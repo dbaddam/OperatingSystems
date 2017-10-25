@@ -36,8 +36,6 @@ wp2: project
 
 wp3: project
 
-homework: project
-
 $(USER).iso: kernel $(ROOTBOOT)/large-file-padding
 	cp kernel $(ROOTBOOT)/kernel/kernel
 	mkisofs -r -no-emul-boot -input-charset utf-8 -b boot/cdboot -o $@ $(ROOTFS)/
@@ -100,5 +98,5 @@ clean:
 
 SUBMITTO=/submit
 submit: clean $(USER)-data.img
-	tar -czvf $(USER).tgz --exclude=.gitkeep --exclude=.*.sw? --exclude=*~ LICENSE README Makefile Makefile.config sys bin crt libc include homework $(ROOTFS) $(USER)-data.img
-#mv -v $(USER).tgz $(SUBMITTO)/$(USER)-$(ASSIGNMENT)=`date +%F=%T`.tgz
+	tar -czvf $(USER).tgz --exclude=.gitkeep --exclude=.*.sw? --exclude=*~ LICENSE README Makefile Makefile.config sys bin crt libc include $(ROOTFS) $(USER)-data.img
+	mv -v $(USER).tgz $(SUBMITTO)/$(USER)-$(ASSIGNMENT)=`date +%F=%T`.tgz
