@@ -21,6 +21,7 @@ void ahci_probe()
 {
    uint32_t pi = abar->pi;
    uint32_t i;
+   uint32_t first_drive = 0;
 
    /* We need to probe the bits which are set in pi */
    for (i = 0 ;i < 32 && pi ;i++, pi >>= 1)
@@ -49,6 +50,12 @@ void ahci_probe()
               break;
 	   default:
 	      kprintf("SATA drive found at port %d\n", i);
+              if (!first_drive)
+              {
+                 first_drive = 1;
+                 continue;
+              }
+	      kprintf("Will be using the SATA drive found at port %d for r/w\n", i);
               ahciportno = i;
               return;
 	}

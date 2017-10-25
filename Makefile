@@ -99,4 +99,4 @@ clean:
 SUBMITTO=/submit
 submit: clean $(USER)-data.img
 	tar -czvf $(USER).tgz --exclude=.gitkeep --exclude=.*.sw? --exclude=*~ LICENSE README Makefile Makefile.config sys bin crt libc include $(ROOTFS) $(USER)-data.img
-	mv -v $(USER).tgz $(SUBMITTO)/$(USER)-$(ASSIGNMENT)=`date +%F=%T`.tgz
+#mv -v $(USER).tgz $(SUBMITTO)/$(USER)-$(ASSIGNMENT)=`date +%F=%T`.tgz
