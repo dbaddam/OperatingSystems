@@ -32,8 +32,8 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   picremap(MASTER_PIC_OFFSET, SLAVE_PIC_OFFSET);
   init_idt();
   register_all_irqs();
-  pci_enum();
-  ahci();
+  //pci_enum();
+  //ahci();
   while(1);
 }
 
