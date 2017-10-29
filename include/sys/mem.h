@@ -5,7 +5,7 @@
 
 
 #define PAGE_SIZE (1 << 12)
-
+#define KERNEL_BASE (0xffffffff80000000)
 // Page descriptor
 struct mem_pd{
 #define INVALID_MEM_PD    0x00000001
