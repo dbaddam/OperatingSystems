@@ -7,6 +7,9 @@
 #define PG_PS   0x080
 
 
+#define PHYS_ADDR(vaddr) (vaddr - KERNEL_BASE)
+#define VIRT_ADDR(paddr) (paddr + KERNEL_BASE)
+
 /*  TODOKISHAN - get_free_page should return virtual address which
  *  would cascade a set of changes in the way page entries are filled.
 */
@@ -137,13 +140,13 @@ void init_mem(uint32_t *modulep, void* kernmem, void *physbase, void *physfree){
   clear_page(pt1);
   clear_page(pt2);
 
-  pml4[PML4_INDEX(KERNEL_BASE)] = (uint64_t)pdp;
+  pml4[PML4_INDEX(KERNEL_BASE)] = PHYS_ADDR((uint64_t)pdp);
   pml4[PML4_INDEX(KERNEL_BASE)] |= PG_P|PG_RW;
-  pdp[PDP_INDEX(KERNEL_BASE)] = (uint64_t)pd;
+  pdp[PDP_INDEX(KERNEL_BASE)] = PHYS_ADDR((uint64_t)pd);
   pdp[PDP_INDEX(KERNEL_BASE)] |= PG_P|PG_RW;
-  pd[PD_INDEX(KERNEL_BASE)] = (uint64_t)pt1;
+  pd[PD_INDEX(KERNEL_BASE)] = PHYS_ADDR((uint64_t)pt1);
   pd[PD_INDEX(KERNEL_BASE)] |= PG_P|PG_RW;
-  pd[PD_INDEX(KERNEL_BASE)+1] = (uint64_t)pt2;
+  pd[PD_INDEX(KERNEL_BASE)+1] = PHYS_ADDR((uint64_t)pt2);
   pd[PD_INDEX(KERNEL_BASE)+1] |= PG_P|PG_RW;
 
   kprintf("PML4 - %p, index = %d\n", pml4, PML4_INDEX(KERNEL_BASE));
@@ -174,16 +177,16 @@ void init_mem(uint32_t *modulep, void* kernmem, void *physbase, void *physfree){
   clear_page(pdp1);
   clear_page(pd1);
   clear_page(pt3);
-  pml4[0] = (uint64_t)pdp1 | PG_P|PG_RW;
-  pdp1[0] = (uint64_t)pd1 | PG_P|PG_RW;
-  pd1[0] = (uint64_t)pt3 | PG_P|PG_RW;
+  pml4[0] = PHYS_ADDR((uint64_t)pdp1) | PG_P|PG_RW;
+  pdp1[0] = PHYS_ADDR((uint64_t)pd1) | PG_P|PG_RW;
+  pd1[0] = PHYS_ADDR((uint64_t)pt3) | PG_P|PG_RW;
   for ( i = 0;i < 256;i++)
   {
      pt3[i] = i*((uint64_t)PAGE_SIZE);
      pt3[i] |= PG_P|PG_RW;
   }
   
-  trans_addr(0xffffffff8020062e, pml4);
+  trans_addr(0xffffffff8020062e, PHYS_ADDR(pml4));
   kprintf("About to go into loop\n");
 /*
    __asm__ __volatile__("movq %0, %%cr4"
@@ -192,16 +195,23 @@ void init_mem(uint32_t *modulep, void* kernmem, void *physbase, void *physfree){
 */
    __asm__ __volatile__("movq %0, %%cr3"
                          : 
-                         : "r"((uint64_t)(pml4)));
+                         : "r"(PHYS_ADDR((uint64_t)(pml4))));
 }
 
-void* _get_page()
+
+
+void* _get_page_phys()
 {
-   void* ptr = (mem_pd*)((head_freepd-start_pd)*PAGE_SIZE);
+   void* ptr = (void*)((head_freepd-start_pd)*PAGE_SIZE);
    start_pd[head_freepd-start_pd].flags = USED_MEM_PD;
    head_freepd = head_freepd->next;
 
    return (void*)ptr; 
+}
+
+void* _get_page()
+{
+   return (void*)(KERNEL_BASE + ((uint64_t)_get_page_phys()));
 }
 
 uint64_t trans_addr(uint64_t ptr, uint64_t* pml4)
