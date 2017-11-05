@@ -6,11 +6,13 @@
 #define PG_U    0x004
 #define PG_PS   0x080
 
+
+/*  TODOKISHAN - get_free_page should return virtual address which
+ *  would cascade a set of changes in the way page entries are filled.
+*/
 mem_pd* start_pd;
 mem_pd* head_freepd;
 
-void* _get_page();
-void  _free_page(void* ptr);
 void clear_page(void* ptr);
 uint64_t trans_addr(uint64_t ptr, uint64_t* pml4);
 
