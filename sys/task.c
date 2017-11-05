@@ -13,7 +13,8 @@ void create_task(task* t, void (*main)(), uint64_t flags, uint64_t* pml4)
    t->reg_r13 = 0;
    t->reg_r12 = 0;
    t->reg_rbp = 0;
-   /* TODOKISHAN - KERNEL_BASE must be removed ideally */
+   /* TODOKISHAN - 1. KERNEL_BASE must be removed ideally 
+    *              2. Add a variable to the stack to preserve where the page is.*/
    t->reg_rsp = KERNEL_BASE + ((uint64_t)_get_page()) + 0x1000 - 8;
    t->reg_rbx = 0;
    t->reg_rip = (uint64_t)main;
