@@ -18,4 +18,6 @@ struct mem_pd{
 typedef struct mem_pd mem_pd;
 
 void init_mem(uint32_t *modulep, void* kernmem, void *physbase, void *physfree);
+void* _get_page();
+void  _free_page(void* ptr);
 #endif

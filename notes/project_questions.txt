@@ -1,0 +1,2 @@
+1. What exactly all caller and callee saved registers?
+2. Invalidating TLB cache.

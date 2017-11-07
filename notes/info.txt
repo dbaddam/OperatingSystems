@@ -1,0 +1,5 @@
+Registers %rbp, %rbx and %r12 through %r15 "belong" to the calling function and the called function is 
+required to preserve their values. In other words, a called function must preserve
+these registers' values for its caller. Remaining registers "belong" to the called
+function. If a calling function wants to preserve such a register value across a
+function call, it must save the value in its local stack frame.

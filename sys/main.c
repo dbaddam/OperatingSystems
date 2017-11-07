@@ -1,11 +1,9 @@
-#include <sys/defs.h>
+#include <sys/os.h>
 #include <sys/gdt.h>
 #include <sys/idt.h>
-#include <sys/kprintf.h>
 #include <sys/tarfs.h>
 #include <sys/ahci.h>
 #include <sys/pic.h>
-#include <sys/mem.h>
 #include <sys/pci.h>
 #include <sys/ahci.h>
 
@@ -21,9 +19,11 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   init_mem(modulep, &kernmem, physbase, physfree);
   //picremap(MASTER_PIC_OFFSET, SLAVE_PIC_OFFSET);
   kprintf("tarfs in [%p:%p]\n", &_binary_tarfs_start, &_binary_tarfs_end);
-  //init_idt();
-  //register_all_irqs();
-  //pci_enum();
+  init_idt();
+  init_task_system();
+  register_all_irqs();
+  pci_enum();
+  yield();
   //ahci();
   while(1);
 }
