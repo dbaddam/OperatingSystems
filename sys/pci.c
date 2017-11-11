@@ -54,7 +54,7 @@ void* pci_abar(uint8_t bus, uint8_t slot, uint8_t fn)
    /* HOMEWORK - Using the loader built for the homework does not need
                  the following line. If the original loader is used and
                  the following line is commented, we get error */
-   //pci_config_write_register(bus, slot, fn, 0x24, AHCI_BASE);
+   pci_config_write_register(bus, slot, fn, 0x24, AHCI_BASE);
    bar5 = PCI_BAR5(bus, slot, fn);
 
    return (void*) bar5;

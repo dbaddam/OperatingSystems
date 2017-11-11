@@ -10,6 +10,10 @@
 #define PHYS_ADDR(vaddr) (vaddr - KERNEL_BASE)
 #define VIRT_ADDR(paddr) (paddr + KERNEL_BASE)
 
+void create_page_table_entry(uint64_t logical_address,
+                             uint64_t physical_address,
+                             uint64_t* pml4);
+
 /*  TODOKISHAN - get_free_page should return virtual address which
  *  would cascade a set of changes in the way page entries are filled.
 */
@@ -362,19 +366,19 @@ void create_page_table_entry(uint64_t logical_address,
    if(((pml4[pml4_entry] & PG_P) == PG_P) &&
       ((pml4[pml4_entry] & PG_RW) == PG_RW))
    {
-      uint64_t* pdp = pml4[pml4_entry];
+      uint64_t* pdp = (uint64_t*) pml4[pml4_entry];
       uint64_t pdp_entry = PDP_INDEX(logical_address);
       
       if(((pdp[pdp_entry] & PG_P) == PG_P) &&
          ((pdp[pdp_entry] & PG_RW) == PG_RW))
       {
-         uint64_t* pd = pdp[pdp_entry];
+         uint64_t* pd = (uint64_t *) pdp[pdp_entry];
          uint64_t pd_entry = PD_INDEX(logical_address);
          
          if(((pd[pd_entry] & PG_P) == PG_P) &&
             ((pd[pd_entry] & PG_RW) == PG_RW))
          {
-            uint64_t* pt = pd[pd_entry];
+            uint64_t* pt = (uint64_t *) pd[pd_entry];
             uint64_t pt_entry = PT_INDEX(logical_address);
             
             if(((pt[pt_entry] & PG_P) == PG_P) &&
@@ -383,10 +387,10 @@ void create_page_table_entry(uint64_t logical_address,
                // this means that there is already an entry for the given logical address
                // also means that this logical address has already been mapped to a physical address earlier
            
-               // DO NOTHING AS OF NOW
+               ;// DO NOTHING AS OF NOW
             }else
             {
-               pt[pt_entry] = (unit64_t)physical_address;
+               pt[pt_entry] = (uint64_t)physical_address;
                pt[pt_entry] |= PG_P|PG_RW;
             }
             
