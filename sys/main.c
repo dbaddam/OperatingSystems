@@ -22,7 +22,7 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   init_idt();
   init_task_system();
   register_all_irqs();
-  pci_enum();
+  //pci_enum();
 
   while (1)
   {

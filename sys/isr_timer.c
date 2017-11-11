@@ -26,7 +26,7 @@ void isr_timer()
       str[len+1] = '\0';
 
       char *temp2, *temp1;
-      temp2 = (char*)0xb8000+80*45;
+      temp2 = (char*)(VIDEO_MEM_BASE)+80*45;
       for(temp1 = "Time since boot: " ; *temp1; temp1 += 1,temp2 += 2)
       {   
         *temp2 = *temp1;    

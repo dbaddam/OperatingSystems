@@ -1,6 +1,10 @@
 #ifndef __KPRINTF_H
 #define __KPRINTF_H
 
+#include <sys/mem.h>
+
+#define VIDEO_MEM_BASE (KERNEL_BASE + 0xB8000)
+
 void kprintf(const char *fmt, ...);
 void longTOhexa( unsigned long number, char *p, int base);
 int stringlen(const char *a);

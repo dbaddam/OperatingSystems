@@ -133,8 +133,8 @@ void memcopy()
 {
      register char *temp3, *temp2;
      pos =0;
-     temp2 = (char*)0xb8000+pos;
-     for(temp3 = (char*)0xb8000+width+pos; temp3 < (char*)0xb8000+width*height; temp3 += 2, temp2 += 2, pos += 2)
+     temp2 = (char*)VIDEO_MEM_BASE+pos;
+     for(temp3 = (char*)VIDEO_MEM_BASE+width+pos; temp3 < (char*)VIDEO_MEM_BASE+width*height; temp3 += 2, temp2 += 2, pos += 2)
      {
         *temp2 = *temp3;
         *temp3 = ' ';
@@ -216,7 +216,7 @@ void kprintf(const char *fmt, ...)
     buffer[k]='\0';
   
   register char *temp1, *temp2;  
-//  for(temp2 = (char*)0xb8001; temp2 < (char*)0xb8000+160*25; temp2 += 2)
+//  for(temp2 = (char*)(VIDEO_MEM_BASE+1); temp2 < (char*)VIDEO_MEM_BASE+160*25; temp2 += 2)
 //     *temp2 = 7;
 
   if(pos >= width*height)
@@ -225,21 +225,21 @@ void kprintf(const char *fmt, ...)
      memcopy();
 
      pos = width*height - width;
-     temp2 = (char*)0xb8000 + pos;
+     temp2 = (char*)VIDEO_MEM_BASE + pos;
   }else
-     temp2 = (char*)0xb8000+pos;  
+     temp2 = (char*)VIDEO_MEM_BASE+pos;  
   
   for(temp1 = buffer; *temp1; temp1 += 1,temp2 += 2,pos += 2)
   {
      if(*temp1 == '\n')
      {
         pos = pos + width - (pos % width)-2;
-        temp2 = (char*)0xb8000 + pos;
+        temp2 = (char*)VIDEO_MEM_BASE + pos;
      }else
      if(*temp1 == '\r')
      {
         pos = pos - (pos % width)-2;
-        temp2 = (char*)0xb8000 + pos;
+        temp2 = (char*)VIDEO_MEM_BASE + pos;
      }else
      {
         *temp2 = *temp1;

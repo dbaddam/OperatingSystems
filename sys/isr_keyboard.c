@@ -11,7 +11,7 @@ int ctrl = 0;
 void printChar(char c)
 {
    char *temp2;
-   temp2 = (char*)0xb8000+(80*45)-6;
+   temp2 = (char*)VIDEO_MEM_BASE+(80*45)-6;
        *temp2 = c;    
    
    if(ctrl == 1)
