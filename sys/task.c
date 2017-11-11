@@ -15,7 +15,7 @@ static task maintask;
 
 void create_task(task* t, void (*main)(), uint64_t flags, uint64_t* pml4)
 {
-   uint64_t* st;
+   //uint64_t* st;
    t->stack   = (uint8_t*)_get_page(); 
    t->reg_r15 = 0;
    t->reg_r14 = 0;
@@ -24,10 +24,11 @@ void create_task(task* t, void (*main)(), uint64_t flags, uint64_t* pml4)
    t->reg_rbp = 0;
    t->reg_rsp = ((uint64_t)t->stack)+ 0x1000 - 8;
    t->reg_rbx = 0;
+   t->reg_rip = (uint64_t) main;
    //t->reg_rflags = flags;
    //t->reg_cr3 = (uint64_t) pml4;
 
-   st = (uint64_t*) t->stack;
+   //st = (uint64_t*) t->stack;
    t->next = cur_task->next;
    cur_task->next =t;
 }
