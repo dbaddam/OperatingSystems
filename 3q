@@ -5,7 +5,7 @@ static task* cur_task;
 static task task1;
 static task task2;
 //static task dummytask;
-static task maintask;
+static task idletask;
 
 
 //static task task[MAX_PROCESSES];
@@ -15,19 +15,19 @@ static task maintask;
 
 void create_task(task* t, void (*main)(), uint64_t flags, uint64_t* pml4)
 {
-   uint64_t* st;
    t->stack   = (uint8_t*)_get_page(); 
    t->reg_r15 = 0;
    t->reg_r14 = 0;
    t->reg_r13 = 0;
    t->reg_r12 = 0;
    t->reg_rbp = 0;
+   /* TODOKISHAN - 1. KERNEL_BASE must be removed ideally 
+    *              2. Add a variable to the stack to preserve where the page is.*/
    t->reg_rsp = ((uint64_t)t->stack)+ 0x1000 - 8;
    t->reg_rbx = 0;
+   t->reg_rip = (uint64_t)main;
    //t->reg_rflags = flags;
    //t->reg_cr3 = (uint64_t) pml4;
-
-   st = (uint64_t*) t->stack;
    t->next = cur_task->next;
    cur_task->next =t;
 }
@@ -72,18 +72,27 @@ static void main2()
    }
 }
 
+void idle()
+{
+   while (1)
+   {
+      kprintf("Inside idle task\n");
+      yield();
+   }
+}
+
 void init_task_system()
 {
-   cur_task = &maintask; 
-   cur_task->next = &maintask; 
-   create_task(&maintask, 0, 0, NULL);
+   cur_task = &idletask; 
+   cur_task->next = &idletask; 
+   create_task(&idletask, idle, 0, NULL);
 
    create_task(&task1, main1, 0, NULL);
    create_task(&task2, main2, 0, NULL);
-//   task1.next = &task2;
-//   task2.next = &task1;
-//   dummytask.next = &task1;
-//   cur_task = &dummytask;
+   //task1.next = &task2;
+   //task2.next = &task1;
+   //dummytask.next = &task1;
+   //cur_task = &dummytask;
 }
 
 void yield()

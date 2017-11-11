@@ -23,7 +23,12 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   init_task_system();
   register_all_irqs();
   pci_enum();
-  yield();
+
+  while (1)
+  {
+    kprintf("Idle task\n");
+    yield();
+  }
   //ahci();
   while(1);
 }

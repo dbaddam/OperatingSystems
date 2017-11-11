@@ -3,6 +3,8 @@
 
 #include <sys/defs.h>
 
+#define MAX_PROCESSES 1024
+
 struct _task{
    /* It is very important that the registers stay at the top.
     * Bad things will happen otherwise. If you MUST change this, change
@@ -17,6 +19,8 @@ struct _task{
    uint64_t reg_rip;
    //uint64_t reg_cr3;
    //uint64_t reg_rflags;
+   
+   uint8_t* stack;
    struct _task* next;
 };
 
