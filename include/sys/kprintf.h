@@ -7,4 +7,6 @@ int stringlen(const char *a);
 void strrev(char *a);
 void intTOstring(int number, char *p, int base);
 void unsignedLongTOstring(unsigned long number, char *p, int base);
+
+#define ERROR(...) kprintf("********ERROR : " __VA_ARGS__)
 #endif

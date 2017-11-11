@@ -122,7 +122,7 @@ void init_mem(uint32_t *modulep, void* kernmem, void *physbase, void *physfree){
   kprintf("pd pages - %d\n", pd_pages);
   kprintf("kernel pages - %d\n", kernel_pages);
   kprintf("head_freepd - %p\n", head_freepd);
-  kprintf("head_freepd index - %d\n", (head_freepd-start_pd));
+ kprintf("head_freepd index - %d\n", (head_freepd-start_pd));
 
 #define PML4_INDEX(ptr) ((((uint64_t)ptr) & 0x0000ff8000000000) >> 39)
 #define PDP_INDEX(ptr)  ((((uint64_t)ptr) & 0x0000007fc0000000) >> 30)
@@ -235,6 +235,8 @@ uint64_t trans_addr(uint64_t ptr, uint64_t* pml4)
 
 void _free_page(void* ptr)
 {
+   /* Raise an error if someone sent a free page's ptr
+    */
    uint64_t index = ((uint64_t)(ptr)/PAGE_SIZE);
    start_pd[index].next = head_freepd;
 
@@ -251,3 +253,193 @@ void clear_page(void* ptr)
        *p = 0;
 }
 
+
+/* The caller of this function MUST send the start_logical address
+ * aligned with page size and MUST send 
+ * (end_logical_address-start_logical_address) to be a set of 
+ * pages */
+void create_page_tables(uint64_t start_logical_address,
+                        uint64_t end_logical_address, 
+                        uint64_t start_physical_address, 
+                        uint64_t* pml4)
+{
+   uint64_t logical_address;
+   uint64_t physical_address = start_physical_address;
+
+   if (start_logical_address % PAGE_SIZE)
+   {
+      ERROR("create_page_tables : Invalid start_logical_address - 0x%p\n", 
+            start_logical_address);
+      return; 
+   }
+
+   if ((end_logical_address + 1) % PAGE_SIZE)
+   {
+      ERROR("create_page_tables : Invalid end_logical_address - 0x%p\n", 
+            end_logical_address);
+      return;
+   }
+
+   for(logical_address = start_logical_address; 
+       logical_address < end_logical_address;
+       logical_address += PAGE_SIZE, physical_address += PAGE_SIZE
+      )
+   {
+      create_page_table_entry(logical_address, physical_address, pml4);
+   }
+
+   /*
+   // should I really clear this page??? if so il have to clear the 
+   // pages in the below for loops also
+   //clear_page(pml4);
+
+   uint64_t pml4_start_entry = PML4_INDEX(start_logical_address);
+   uint64_t pml4_end_entry = PML4_INDEX(end_logical_address);
+   
+   int i;
+   for(i = pml4_start_entry; i<= pml4_end_entry; i++)
+   {
+      uint64_t* pdp = (uint64_t*) _get_page();
+      clear_page(pdp);
+      pml4[i] = (uint64_t)pdp;
+      pml4[i] |= PG_P|PG_RW;
+      
+      uint64_t pdp_start_entry = PDP_INDEX(start_logical_address);
+      uint64_t pdp_end_entry = PDP_INDEX(end_logical_address);
+      int j;
+      for(j = pdp_start_entry; j<= pdp_end_entry; j++)
+      {
+         uint64_t* pd = (uint64_t*) _get_page();
+         clear_page(pd);
+         pdp[j] = (uint64_t)pd;
+         pdp[j] |= PG_P|PG_RW;
+         
+         uint64_t pd_start_entry = PD_INDEX(start_logical_address);
+         uint64_t pd_end_entry = PD_INDEX(end_logical_address);
+         int k;
+         for(k = pd_start_entry; k<= pd_end_entry; k++)
+         {
+            uint64_t* pt = (uint64_t*) _get_page();
+            clear_page(pt);
+            pd[k] = (uint64_t)pt;
+            pd[k] |= PG_P|PG_RW;
+            
+            uint64_t pt_start_entry = PT_INDEX(start_logical_address);
+            uint64_t pt_end_entry = PT_INDEX(end_logical_address);
+            int l;
+            for(l = pt_start_entry; l<= pt_end_entry; l++)
+            {
+               pt[l] = (uint64_t)start_physical_address;
+               start_physical_address += (uint64_t)PAGE_SIZE;
+            }  
+         }
+      }
+   }
+   */
+}
+
+
+#define PML4_INDEX(ptr) ((((uint64_t)ptr) & 0x0000ff8000000000) >> 39)
+#define PDP_INDEX(ptr)  ((((uint64_t)ptr) & 0x0000007fc0000000) >> 30)
+#define PD_INDEX(ptr)   ((((uint64_t)ptr) & 0x000000003fe00000) >> 21)
+#define PT_INDEX(ptr)   ((((uint64_t)ptr) & 0x00000000001ff000) >> 12)
+/* NOTE : If the logical address is already mapped to a physical address, which means that its entry
+ * is already present in 4th level PT table, we are DOING NOTHING AS OF NOW!
+ * may have to implement later for future use case
+ * 
+ * What this function does?
+ * This function will create an entry in the page table for given logical address and map it to
+ * given physical address(which is the address of first byte of a 4Kb page)
+ */
+void create_page_table_entry(uint64_t logical_address,
+                             uint64_t physical_address,
+                             uint64_t* pml4)
+{
+   uint64_t pml4_entry = PML4_INDEX(logical_address);
+   
+   // we should check if already this entry is present in the pml4 table
+   // can verfiy that by checking the last 2 bits of that entry
+   if(((pml4[pml4_entry] & PG_P) == PG_P) &&
+      ((pml4[pml4_entry] & PG_RW) == PG_RW))
+   {
+      uint64_t* pdp = pml4[pml4_entry];
+      uint64_t pdp_entry = PDP_INDEX(logical_address);
+      
+      if(((pdp[pdp_entry] & PG_P) == PG_P) &&
+         ((pdp[pdp_entry] & PG_RW) == PG_RW))
+      {
+         uint64_t* pd = pdp[pdp_entry];
+         uint64_t pd_entry = PD_INDEX(logical_address);
+         
+         if(((pd[pd_entry] & PG_P) == PG_P) &&
+            ((pd[pd_entry] & PG_RW) == PG_RW))
+         {
+            uint64_t* pt = pd[pd_entry];
+            uint64_t pt_entry = PT_INDEX(logical_address);
+            
+            if(((pt[pt_entry] & PG_P) == PG_P) &&
+               ((pt[pt_entry] & PG_RW) == PG_RW))
+            {
+               // this means that there is already an entry for the given logical address
+               // also means that this logical address has already been mapped to a physical address earlier
+           
+               // DO NOTHING AS OF NOW
+            }else
+            {
+               pt[pt_entry] = (unit64_t)physical_address;
+               pt[pt_entry] |= PG_P|PG_RW;
+            }
+            
+         }else
+         {
+            uint64_t* pt = (uint64_t*) _get_page();
+            clear_page(pt);
+            pd[pd_entry] = (uint64_t)pt;
+            pd[pd_entry] |= PG_P|PG_RW;
+
+            uint64_t pt_entry = PT_INDEX(logical_address);
+            pt[pt_entry] = (uint64_t)physical_address;
+            pt[pt_entry] |= PG_P|PG_RW;
+         }
+      }else
+      {
+         uint64_t* pd = (uint64_t*) _get_page();
+         clear_page(pd);
+         pdp[pdp_entry] = (uint64_t)pd;
+         pdp[pdp_entry] |= PG_P|PG_RW;
+      
+         uint64_t pd_entry = PD_INDEX(logical_address);
+         uint64_t* pt = (uint64_t*) _get_page();
+         clear_page(pt);
+         pd[pd_entry] = (uint64_t)pt;
+         pd[pd_entry] |= PG_P|PG_RW;
+
+         uint64_t pt_entry = PT_INDEX(logical_address);
+         pt[pt_entry] = (uint64_t)physical_address;
+         pt[pt_entry] |= PG_P|PG_RW;
+      }
+      
+   }else
+   {
+      uint64_t* pdp = (uint64_t*) _get_page();
+      clear_page(pdp);
+      pml4[pml4_entry] = (uint64_t)pdp;
+      pml4[pml4_entry] |= PG_P|PG_RW;
+    
+      uint64_t pdp_entry = PDP_INDEX(logical_address);
+      uint64_t* pd = (uint64_t*) _get_page();
+      clear_page(pd);
+      pdp[pdp_entry] = (uint64_t)pd;
+      pdp[pdp_entry] |= PG_P|PG_RW;
+    
+      uint64_t pd_entry = PD_INDEX(logical_address);
+      uint64_t* pt = (uint64_t*) _get_page();
+      clear_page(pt);
+      pd[pd_entry] = (uint64_t)pt;
+      pd[pd_entry] |= PG_P|PG_RW;
+    
+      uint64_t pt_entry = PT_INDEX(logical_address);
+      pt[pt_entry] = (uint64_t)physical_address;
+      pt[pt_entry] |= PG_P|PG_RW;
+   }
+}

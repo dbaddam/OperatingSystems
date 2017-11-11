@@ -140,6 +140,7 @@ void memcopy()
         *temp3 = ' ';
      }
 }
+
 void kprintf(const char *fmt, ...)
 {
 
@@ -246,4 +247,3 @@ void kprintf(const char *fmt, ...)
   }
 
 }
-    

@@ -9,7 +9,11 @@
 #define REG_UPPER_MASK    0xFFFF0000
 #define REG_INNER_MASK    0x0000FFFF
 
-#define AHCI_BASE         0x3FFF0000
+//#define AHCI_BASE         0x3FFF0000
+//#define AHCI_BASE         0x100000
+//#define AHCI_BASE         0xbd810000
+#define AHCI_BASE         0xA6000
+//#define AHCI_BASE 0x100000000UL
 
 #define PCI_VENDOR(b,s,f)    ((pci_config_read_register(b, s, f, 0)) & 0xFFFF)
 #define PCI_CLASS(b,s,f)     ((uint8_t)(((pci_config_read_register(b, s, f, 8)) & 0xFF000000) >> 24))
@@ -65,16 +69,24 @@ uint16_t pci_enum()
    kprintf("Walking through PCI config space...\n");
    for (bus = 0; bus < 255;bus++)
       for (device = 0; device < 32; device++)
-         for (fn = 0; fn < 8; fn++)
-            if (PCI_VENDOR(bus, device, 0) != 0xFFFF &&
-                PCI_CLASS(bus, device, 0) == 0x01 &&
-                PCI_SUBCLASS(bus, device, 0) == 0x06 /*&&
-                PCI_PROGIF(bus, device) == 0x01*/)
-            {
-               ahci_abar = pci_abar(bus, device, 0);
-               kprintf("AHCI controller detected\n");
-               break;
-            }
+         for (fn = 0; fn < 8;fn++)
+         if (PCI_VENDOR(bus, device, fn) != 0xFFFF &&
+             PCI_CLASS(bus, device, fn) == 0x01 &&
+             PCI_SUBCLASS(bus, device, fn) == 0x06 /*&&
+             PCI_PROGIF(bus, device) == 0x01*/)
+         {
+            ahci_abar = pci_abar(bus, device, fn);
+            kprintf("line1 - 0x%x\n", pci_config_read_register(bus, device, fn, 0x0));
+            kprintf("line2 - 0x%x\n", pci_config_read_register(bus, device, fn, 0x4));
+            kprintf("line3 - 0x%x\n", pci_config_read_register(bus, device, fn, 0x8));
+            kprintf("line4 - 0x%x\n", pci_config_read_register(bus, device, fn, 0xC));
+            kprintf("AHCI controller fn - %d, bar5 - %x\n", fn, PCI_BAR5(bus, device, fn));
+            kprintf("AHCI controller fn - %d, bar4 - %x\n", fn, PCI_BAR4(bus, device, fn));
+            /*for (fn = 1; fn < 8;fn++)
+              if (PCI_VENDOR(bus, device, fn) != 0xFFFF)
+                 kprintf("Multi-function AHCI.. Please re-configure\n");
+            */
+         }
 
    return 0;
 }
