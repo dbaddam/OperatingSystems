@@ -17,11 +17,13 @@ struct _task{
    uint64_t reg_rsp;
    uint64_t reg_rbx;
    uint64_t reg_rip;
-   //uint64_t reg_cr3;
-   //uint64_t reg_rflags;
+   uint64_t reg_cr3;
+   uint64_t reg_rflags;
    
    uint8_t* stack;
    struct _task* next;
+   uint64_t flags_task;
+#define KILL_TASK 0x0001
 };
 
 typedef struct _task task;
@@ -29,5 +31,6 @@ typedef struct _task task;
 void create_task(task* t, void (*main)(), uint64_t flags, uint64_t* pml4);
 void init_task_system();
 void yield();
+//void switch_task(task* old, task* new, task** last);
 void switch_task(task* old, task* new);
 #endif

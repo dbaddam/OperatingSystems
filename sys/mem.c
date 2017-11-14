@@ -12,12 +12,14 @@
 
 void create_page_table_entry(uint64_t logical_address,
                              uint64_t physical_address,
-                             uint64_t* pml4);
+                             uint64_t* pml4,
+                             uint16_t flags);
 
 void create_page_tables(uint64_t start_logical_address,
                         uint64_t end_logical_address, 
                         uint64_t start_physical_address, 
-                        uint64_t* pml4);
+                        uint64_t* pml4,
+                        uint16_t flags);
 
 /*  TODOKISHAN - get_free_page should return virtual address which
  *  would cascade a set of changes in the way page entries are filled.
@@ -143,8 +145,9 @@ void init_mem(uint32_t *modulep, void* kernmem, void *physbase, void *physfree){
   create_page_tables(KERNEL_BASE, 
                      /* TODOKISHAN - We have to better this. At this point, a new page
                         table created after the following address will fail */
-                     KERNEL_BASE + (kernel_pages*PAGE_SIZE) + (100*PAGE_SIZE) -1,
-                     0, pml4);
+                     KERNEL_BASE + (kernel_pages*PAGE_SIZE) + (100*PAGE_SIZE) - 1,
+                     0, pml4, PG_P|PG_RW);
+
 /*
   uint64_t* pdp = (uint64_t*) _get_page();
   uint64_t* pd = (uint64_t*) _get_page();
@@ -285,7 +288,8 @@ void clear_page(void* ptr)
 void create_page_tables(uint64_t start_logical_address,
                         uint64_t end_logical_address, 
                         uint64_t start_physical_address, 
-                        uint64_t* pml4)
+                        uint64_t* pml4,
+                        uint16_t flags)
 {
    uint64_t logical_address;
    uint64_t physical_address = start_physical_address;
@@ -310,7 +314,7 @@ void create_page_tables(uint64_t start_logical_address,
        logical_address += PAGE_SIZE, physical_address += PAGE_SIZE
       )
    {
-      create_page_table_entry(logical_address, physical_address, pml4);
+      create_page_table_entry(logical_address, physical_address, pml4, flags);
    }
 
    /*
@@ -378,7 +382,8 @@ void create_page_tables(uint64_t start_logical_address,
  */
 void create_page_table_entry(uint64_t logical_address,
                              uint64_t physical_address,
-                             uint64_t* pml4)
+                             uint64_t* pml4,
+                             uint16_t flags)
 {
 #define CL12(addr) ((addr >> 12) << 12)
    uint64_t pml4_entry = PML4_INDEX(logical_address);
@@ -386,26 +391,30 @@ void create_page_table_entry(uint64_t logical_address,
  
    // we should check if already this entry is present in the pml4 table
    // can verfiy that by checking the last 2 bits of that entry
-   if(((pml4[pml4_entry] & PG_P) == PG_P) &&
-      ((pml4[pml4_entry] & PG_RW) == PG_RW))
+   if(((pml4[pml4_entry] & PG_P) == PG_P) 
+      /*&&
+      ((pml4[pml4_entry] & PG_RW) == PG_RW)*/)
    {
       uint64_t* pdp = (uint64_t*) VIRT_ADDR(CL12(pml4[pml4_entry]));
       uint64_t pdp_entry = PDP_INDEX(logical_address);
       
-      if(((pdp[pdp_entry] & PG_P) == PG_P) &&
-         ((pdp[pdp_entry] & PG_RW) == PG_RW))
+      if(((pdp[pdp_entry] & PG_P) == PG_P) 
+         /*&&
+         ((pdp[pdp_entry] & PG_RW) == PG_RW)*/)
       {
          uint64_t* pd = (uint64_t *) VIRT_ADDR(CL12(pdp[pdp_entry]));
          uint64_t pd_entry = PD_INDEX(logical_address);
          
-         if(((pd[pd_entry] & PG_P) == PG_P) &&
-            ((pd[pd_entry] & PG_RW) == PG_RW))
+         if(((pd[pd_entry] & PG_P) == PG_P) 
+            /* &&
+            ((pd[pd_entry] & PG_RW) == PG_RW)*/)
          {
             uint64_t* pt = (uint64_t *) VIRT_ADDR(CL12(pd[pd_entry]));
             uint64_t pt_entry = PT_INDEX(logical_address);
             
-            if(((pt[pt_entry] & PG_P) == PG_P) &&
-               ((pt[pt_entry] & PG_RW) == PG_RW))
+            if(((pt[pt_entry] & PG_P) == PG_P) 
+               /*&&
+               ((pt[pt_entry] & PG_RW) == PG_RW)*/)
             {
                // this means that there is already an entry for the given logical address
                // also means that this logical address has already been mapped to a physical address earlier
@@ -414,7 +423,7 @@ void create_page_table_entry(uint64_t logical_address,
             }else
             {
                pt[pt_entry] = (uint64_t)physical_address;
-               pt[pt_entry] |= PG_P|PG_RW;
+               pt[pt_entry] |= flags;
             }
             
          }else
@@ -422,28 +431,28 @@ void create_page_table_entry(uint64_t logical_address,
             uint64_t* pt = (uint64_t*) _get_page();
             clear_page(pt);
             pd[pd_entry] = PHYS_ADDR((uint64_t)pt);
-            pd[pd_entry] |= PG_P|PG_RW;
+            pd[pd_entry] |= flags;
 
             uint64_t pt_entry = PT_INDEX(logical_address);
             pt[pt_entry] = (uint64_t)physical_address;
-            pt[pt_entry] |= PG_P|PG_RW;
+            pt[pt_entry] |= flags;
          }
       }else
       {
          uint64_t* pd = (uint64_t*) _get_page();
          clear_page(pd);
          pdp[pdp_entry] = PHYS_ADDR((uint64_t)pd);
-         pdp[pdp_entry] |= PG_P|PG_RW;
+         pdp[pdp_entry] |= flags;
       
          uint64_t pd_entry = PD_INDEX(logical_address);
          uint64_t* pt = (uint64_t*) _get_page();
          clear_page(pt);
          pd[pd_entry] = PHYS_ADDR((uint64_t)pt);
-         pd[pd_entry] |= PG_P|PG_RW;
+         pd[pd_entry] |= flags;
 
          uint64_t pt_entry = PT_INDEX(logical_address);
          pt[pt_entry] = (uint64_t)physical_address;
-         pt[pt_entry] |= PG_P|PG_RW;
+         pt[pt_entry] |= flags;
       }
       
    }else
@@ -451,22 +460,22 @@ void create_page_table_entry(uint64_t logical_address,
       uint64_t* pdp = (uint64_t*) _get_page();
       clear_page(pdp);
       pml4[pml4_entry] = PHYS_ADDR((uint64_t)pdp);
-      pml4[pml4_entry] |= PG_P|PG_RW;
+      pml4[pml4_entry] |= flags;
     
       uint64_t pdp_entry = PDP_INDEX(logical_address);
       uint64_t* pd = (uint64_t*) _get_page();
       clear_page(pd);
       pdp[pdp_entry] = PHYS_ADDR((uint64_t)pd);
-      pdp[pdp_entry] |= PG_P|PG_RW;
+      pdp[pdp_entry] |= flags;
     
       uint64_t pd_entry = PD_INDEX(logical_address);
       uint64_t* pt = (uint64_t*) _get_page();
       clear_page(pt);
       pd[pd_entry] = PHYS_ADDR((uint64_t)pt);
-      pd[pd_entry] |= PG_P|PG_RW;
+      pd[pd_entry] |= flags;
     
       uint64_t pt_entry = PT_INDEX(logical_address);
       pt[pt_entry] = (uint64_t)physical_address;
-      pt[pt_entry] |= PG_P|PG_RW;
+      pt[pt_entry] |= flags;
    }
 }

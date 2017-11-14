@@ -3,3 +3,4 @@
 3. Should we set eflags and cr3 as part of task struct?
 4. What is the difference between thread and process? When to create a new PCB?
    Should this is be created once per kernel thread as well?
+5. How much memory would be map inside kernel memory?

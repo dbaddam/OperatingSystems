@@ -12,30 +12,61 @@ static task maintask;
 
 //static task* queue;
 
+void kill_task();
 
-void create_task(task* t, void (*main)(), uint64_t flags, uint64_t* pml4)
+void create_kernel_task(task* t, void (*main)(), uint64_t flags, uint64_t* pml4)
 {
-   //uint64_t* st;
+   uint64_t* st;
    t->stack   = (uint8_t*)_get_page(); 
    t->reg_r15 = 0;
    t->reg_r14 = 0;
    t->reg_r13 = 0;
    t->reg_r12 = 0;
    t->reg_rbp = 0;
-   t->reg_rsp = ((uint64_t)t->stack)+ 0x1000 - 8;
+   t->reg_rsp = ((uint64_t)t->stack)+ 0x1000 - 16;
    t->reg_rbx = 0;
    t->reg_rip = (uint64_t) main;
    //t->reg_rflags = flags;
    //t->reg_cr3 = (uint64_t) pml4;
 
-   //st = (uint64_t*) t->stack;
+   st = (uint64_t*) t->stack;
+   st[511] = (uint64_t)kill_task;
+   //st[510] = (uint64_t)kill_task;
+   //st[509] = (uint64_t)kill_task;
+   //st[510] = (uint64_t)1234;
    t->next = cur_task->next;
    cur_task->next =t;
 }
 
-void kill_task(task* t)
+void create_user_task(task* t, void (*main)(), uint64_t flags, uint64_t* pml4)
 {
-   _free_page(t->stack); 
+   uint64_t* st;
+   t->stack   = (uint8_t*)_get_page(); 
+   t->reg_r15 = 0;
+   t->reg_r14 = 0;
+   t->reg_r13 = 0;
+   t->reg_r12 = 0;
+   t->reg_rbp = 0;
+   t->reg_rsp = ((uint64_t)t->stack)+ 0x1000 - 16;
+   t->reg_rbx = 0;
+   t->reg_rip = (uint64_t) main;
+   //t->reg_rflags = flags;
+   //t->reg_cr3 = (uint64_t) pml4;
+
+   st = (uint64_t*) t->stack;
+   st[511] = (uint64_t)kill_task;
+   //st[510] = (uint64_t)kill_task;
+   //st[509] = (uint64_t)kill_task;
+   //st[510] = (uint64_t)1234;
+   t->next = cur_task->next;
+   cur_task->next =t;
+}
+
+void kill_task()
+{
+   kprintf("Inside kill task\n");
+   while(1);
+   bis(cur_task->flags_task, KILL_TASK); 
 }
 
 static void main1()
@@ -77,10 +108,10 @@ void init_task_system()
 {
    cur_task = &maintask; 
    cur_task->next = &maintask; 
-   create_task(&maintask, 0, 0, NULL);
+   create_kernel_task(&maintask, 0, 0, NULL);
 
-   create_task(&task1, main1, 0, NULL);
-   create_task(&task2, main2, 0, NULL);
+   create_kernel_task(&task1, main1, 0, NULL);
+   create_kernel_task(&task2, main2, 0, NULL);
 //   task1.next = &task2;
 //   task2.next = &task1;
 //   dummytask.next = &task1;
@@ -89,7 +120,13 @@ void init_task_system()
 
 void yield()
 {
-   task* last = cur_task;
+   task* me = cur_task;
+   //task* last;
    cur_task = cur_task->next;
-   switch_task(last, cur_task); 
+   //switch_task(me, cur_task, &last);
+   switch_task(me, cur_task);
+   //if (bit(last->flags_task, KILL_TASK)){
+   //   kprintf("Killing a task\n");
+      // Free stack page
+   //}
 }

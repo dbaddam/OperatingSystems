@@ -2,11 +2,13 @@
 .align 8
 
 /* rdi - old thread
-   rsi - new thread*/
+   rsi - new thread
+   rdx - last thread &last_task*/
 switch_task:
    movq %rdi, %r8 
    movq (%rsp), %rax
- 
+
+//   pushq %rdx 
    movq %r15, 0(%r8) 
    movq %r14, 8(%r8) 
    movq %r13,16(%r8) 
@@ -30,5 +32,7 @@ switch_task:
    #movq %cr3,64(%r8)
    movq 56(%r8), %rax
    movq %rax, (%rsp) 
+//   popq %rdx
+//   movq %rdi, (%rdx)
    retq
   
