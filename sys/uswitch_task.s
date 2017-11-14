@@ -1,12 +1,13 @@
 .text
 
-.globl switch_task
+.globl uswitch_task
 .align 8
 
+#EXTERN user_main
 /* rdi - old thread
    rsi - new thread
    rdx - last thread &last_task*/
-switch_task:
+uswitch_task:
    movq %rdi, %r8 
    movq (%rsp), %rax
 
@@ -18,7 +19,8 @@ switch_task:
    movq %rbp,32(%r8) 
    movq %rsp,40(%r8) 
    movq %rbx,48(%r8)
-   #movq %cr3,64(%r8)
+   movq %cr3, %r15
+   movq %r15,64(%r8)
    # move return address into rip 
    movq %rax,56(%r8) 
 
@@ -31,10 +33,16 @@ switch_task:
    movq 32(%r8), %rbp
    movq 40(%r8), %rsp
    movq 48(%r8), %rbx
-   #movq %cr3,64(%r8)
    movq 56(%r8), %rax
-   movq %rax, (%rsp) 
+   pushq $0x23        #SS
+   pushq %rsp         #stack pointer
+   pushf              #push rflags
+   pushq $0x1B        #CS
+   pushq %rax         #rip
+   #movq %rax, (%rsp) 
 //   popq %rdx
 //   movq %rdi, (%rdx)
-   retq
+   #movq 64(%r8), %rax
+   #movq %rax, %cr3
+   iretq
   

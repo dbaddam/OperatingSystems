@@ -1,0 +1,116 @@
+#include <sys/os.h>
+
+#define _BITUL(x)       (1ULL << x) 
+#define __AC(X,Y)       (X##Y)                                                                                
+#define _AC(X,Y)        __AC(X,Y)   
+
+#define X86_EFLAGS_CF_BIT       0 /* Carry Flag */                                                            
+#define X86_EFLAGS_CF           _BITUL(X86_EFLAGS_CF_BIT)                                                     
+#define X86_EFLAGS_FIXED_BIT    1 /* Bit 1 - always on */                                                     
+#define X86_EFLAGS_FIXED        _BITUL(X86_EFLAGS_FIXED_BIT)                                                  
+#define X86_EFLAGS_PF_BIT       2 /* Parity Flag */                                                           
+#define X86_EFLAGS_PF           _BITUL(X86_EFLAGS_PF_BIT)                                                     
+#define X86_EFLAGS_AF_BIT       4 /* Auxiliary carry Flag */                                                  
+#define X86_EFLAGS_AF           _BITUL(X86_EFLAGS_AF_BIT)                                                     
+#define X86_EFLAGS_ZF_BIT       6 /* Zero Flag */                                                             
+#define X86_EFLAGS_ZF           _BITUL(X86_EFLAGS_ZF_BIT)                                                     
+#define X86_EFLAGS_SF_BIT       7 /* Sign Flag */                                                             
+#define X86_EFLAGS_SF           _BITUL(X86_EFLAGS_SF_BIT)                                                     
+#define X86_EFLAGS_TF_BIT       8 /* Trap Flag */                                                             
+#define X86_EFLAGS_TF           _BITUL(X86_EFLAGS_TF_BIT)                                                     
+#define X86_EFLAGS_IF_BIT       9 /* Interrupt Flag */                                                        
+#define X86_EFLAGS_IF           _BITUL(X86_EFLAGS_IF_BIT)                                                     
+#define X86_EFLAGS_DF_BIT       10 /* Direction Flag */                                                       
+#define X86_EFLAGS_DF           _BITUL(X86_EFLAGS_DF_BIT)                                                     
+#define X86_EFLAGS_OF_BIT       11 /* Overflow Flag */                                                        
+#define X86_EFLAGS_OF           _BITUL(X86_EFLAGS_OF_BIT)                                                     
+#define X86_EFLAGS_IOPL_BIT     12 /* I/O Privilege Level (2 bits) */                                         
+#define X86_EFLAGS_IOPL         (_AC(3,UL) << X86_EFLAGS_IOPL_BIT)                                            
+#define X86_EFLAGS_NT_BIT       14 /* Nested Task */                                                          
+#define X86_EFLAGS_NT           _BITUL(X86_EFLAGS_NT_BIT)                                                     
+#define X86_EFLAGS_RF_BIT       16 /* Resume Flag */                                                          
+#define X86_EFLAGS_RF           _BITUL(X86_EFLAGS_RF_BIT)                                                     
+#define X86_EFLAGS_VM_BIT       17 /* Virtual Mode */                                                         
+#define X86_EFLAGS_VM           _BITUL(X86_EFLAGS_VM_BIT)                                                     
+#define X86_EFLAGS_AC_BIT       18 /* Alignment Check/Access Control */                                       
+#define X86_EFLAGS_AC           _BITUL(X86_EFLAGS_AC_BIT)               
+#define X86_EFLAGS_VIF_BIT      19 /* Virtual Interrupt Flag */                                               
+#define X86_EFLAGS_VIF          _BITUL(X86_EFLAGS_VIF_BIT)                                                    
+#define X86_EFLAGS_VIP_BIT      20 /* Virtual Interrupt Pending */                                            
+#define X86_EFLAGS_VIP          _BITUL(X86_EFLAGS_VIP_BIT)                                                    
+#define X86_EFLAGS_ID_BIT       21 /* CPUID detection */                                                      
+#define X86_EFLAGS_ID           _BITUL(X86_EFLAGS_ID_BIT)           
+
+#define EFER_SCE 0x000000001    /* System Call Extensions (R/W) */                                            
+#define EFER_LME 0x000000100    /* Long mode enable (R/W) */                                                  
+#define EFER_LMA 0x000000400    /* Long mode active (R) */                                                    
+#define EFER_NXE 0x000000800    /* PTE No-Execute bit enable (R/W) */                                         
+#define EFER_SVM 0x000001000    /* SVM enable bit for AMD, reserved for Intel */                              
+#define EFER_LMSLE 0x000002000  /* Long Mode Segment Limit Enable */                                          
+#define EFER_FFXSR 0x000004000  /* Fast FXSAVE/FSRSTOR */                                                     
+#define EFER_TCE   0x000008000  /* Translation Cache Extension */            
+
+
+#define MSR_EFER                0xc0000080 /* extended feature register */
+#define MSR_STAR                0xc0000081 /* legacy mode SYSCALL target */                                   
+#define MSR_LSTAR               0xc0000082 /* long mode SYSCALL target */                                     
+#define MSR_CSTAR               0xc0000083 /* compat mode SYSCALL target */                                   
+#define MSR_SYSCALL_MASK        0xc0000084 /* EFLAGS mask for syscall */        
+
+#define KERNEL_CS 0x08ULL
+#define KERNEL_SS 0x10ULL
+#define USER_CS   0x1BULL
+#define USER_SS   0x23ULL
+
+
+
+void init_syscall()
+{
+  
+   uint64_t star_val = ((KERNEL_CS) <<32 | USER_CS << 48);
+   uint64_t mask = X86_EFLAGS_TF|X86_EFLAGS_DF|X86_EFLAGS_IF|
+	           X86_EFLAGS_IOPL|X86_EFLAGS_AC|X86_EFLAGS_NT;
+   uint64_t efer_val = 0x11111111;
+ 
+    efer_val = rdmsr(MSR_EFER);
+    __asm__ __volatile__ ("rdmsr"
+                         : "=A"(efer_val) 
+                         :"c"((uint32_t)MSR_EFER));
+    kprintf("efer_val - %x\n", efer_val);
+    
+    __asm__ __volatile__ ("wrmsr"
+                         :
+                         : "c"((uint32_t)MSR_EFER), "A"(efer_val|EFER_SCE));
+    wrmsr(MSR_EFER, efer_val|EFER_SCE);
+    __asm__ __volatile__ ("wrmsr"
+                         :
+                         : "c"((uint32_t)MSR_STAR), "A"(star_val));
+    wrmsr(MSR_STAR, star_val);
+
+    __asm__ __volatile__ ("wrmsr"
+                         :
+                         : "c"((uint32_t)MSR_LSTAR), "A"(0x123456789abcdeULL));
+                         //: "c"((uint32_t)MSR_LSTAR), "A"((uint64_t)_syscall_entry));
+    wrmsr(MSR_LSTAR, (uint64_t)_syscall_entry);
+
+    __asm__ __volatile__ ("rdmsr"
+                         : "=A"(efer_val) 
+                         :"c"((uint32_t)MSR_LSTAR));
+    efer_val = rdmsr(MSR_LSTAR);
+    kprintf("lstar_val - %x\n", efer_val);
+    
+    __asm__ __volatile__ ("wrmsr"
+                         :
+                         : "c"((uint32_t)MSR_CSTAR), "A"((uint64_t)_syscall_entry));
+    wrmsr(MSR_CSTAR, (uint64_t)_syscall_entry);
+    __asm__ __volatile__ ("wrmsr"
+                         :
+                         : "c"((uint32_t)MSR_SYSCALL_MASK), "A"(mask));
+    wrmsr(MSR_SYSCALL_MASK, mask);
+}
+
+void sys_write()
+{
+   kprintf("I'm inside write call\n");
+   //while (1);
+}

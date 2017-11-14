@@ -16,8 +16,12 @@ struct mem_pd{
 }__attribute__((__packed__));
 
 typedef struct mem_pd mem_pd;
+uint64_t* kernel_pml4;
+
 
 void init_mem(uint32_t *modulep, void* kernmem, void *physbase, void *physfree);
 void* _get_page();
 void  _free_page(void* ptr);
+uint64_t* create_user_page_tables();
 #endif
+

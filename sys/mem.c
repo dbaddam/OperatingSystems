@@ -1,4 +1,5 @@
 #include <sys/mem.h>
+#include <sys/util.h>
 #include <sys/kprintf.h>
 
 #define PG_P    0x001
@@ -140,13 +141,17 @@ void init_mem(uint32_t *modulep, void* kernmem, void *physbase, void *physfree){
 #define PD_INDEX(ptr)   ((((uint64_t)ptr) & 0x000000003fe00000) >> 21)
 #define PT_INDEX(ptr)   ((((uint64_t)ptr) & 0x00000000001ff000) >> 12)
   uint64_t* pml4 = (uint64_t*) _get_page();
+  kernel_pml4 = pml4;
   clear_page(pml4);
 
   create_page_tables(KERNEL_BASE, 
                      /* TODOKISHAN - We have to better this. At this point, a new page
                         table created after the following address will fail */
+                     //KERNEL_BASE + (1 << 26) - 1,
                      KERNEL_BASE + (kernel_pages*PAGE_SIZE) + (100*PAGE_SIZE) - 1,
-                     0, pml4, PG_P|PG_RW);
+                     0, pml4, PG_U|PG_P|PG_RW);
+  kprintf("Done creating page tables\n");
+  //sleep(5);
 
 /*
   uint64_t* pdp = (uint64_t*) _get_page();
@@ -220,7 +225,26 @@ void init_mem(uint32_t *modulep, void* kernmem, void *physbase, void *physfree){
                          : "r"(PHYS_ADDR((uint64_t)(pml4))));
 }
 
+uint64_t* create_user_page_tables()
+{
+  uint64_t* pml4 = (uint64_t*) _get_page();
+  clear_page(pml4);
 
+  /*TODOKISHAN - You have to remove PG_U in this call*/
+  create_page_tables(KERNEL_BASE, 
+                     /* TODOKISHAN - We have to better this. At this point, a new page
+                        table created after the following address will fail */
+                     KERNEL_BASE + 1000*PAGE_SIZE -1,
+                     0, pml4, PG_P|PG_RW | PG_U);
+
+  create_page_tables(0, 
+                     /* TODOKISHAN - We have to better this. At this point, a new page
+                        table created after the following address will fail */
+                     1000*PAGE_SIZE- 1,
+                     0, pml4, PG_P|PG_RW |PG_U);
+  //trans_addr((uint64_t)pml4, (void*) PHYS_ADDR((uint64_t)pml4));
+  return (uint64_t*)PHYS_ADDR((uint64_t)pml4);
+}
 
 /* _get_page_phys returns the pointer to the physical address
  * of the page */
@@ -256,7 +280,7 @@ uint64_t trans_addr(uint64_t ptr, uint64_t* pml4)
    uint64_t* p3 = (uint64_t*)((uint64_t*)((((uint64_t)p2) >> 2) << 2))[z];
    uint64_t* p4 = (uint64_t*)((uint64_t*)((((uint64_t)p3) >> 2) << 2))[q];
    uint64_t  ans = (uint64_t)(((((uint64_t)p4 >> 2) << 2) + (ptr & 0xfff)));
-   //kprintf("orig_addr - %x, trans_addr - %x\n", ptr, ans);
+   kprintf("orig_addr - %x, trans_addr - %x\n", ptr, ans);
    return ans;
 }
 
@@ -308,12 +332,18 @@ void create_page_tables(uint64_t start_logical_address,
       return;
    }
 
-   //int i = 0;
+   int i = 0;
    for(logical_address = start_logical_address; 
        logical_address < end_logical_address;
        logical_address += PAGE_SIZE, physical_address += PAGE_SIZE
       )
    {
+      if (i %1000 == 0)
+      {
+         kprintf("page - %d\n", i);
+         //sleep(1);
+      }
+      i++;
       create_page_table_entry(logical_address, physical_address, pml4, flags);
    }
 
