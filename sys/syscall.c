@@ -66,51 +66,20 @@
 
 void init_syscall()
 {
-  
-   uint64_t star_val = ((KERNEL_CS) <<32 | USER_CS << 48);
+   uint64_t star_val = ((KERNEL_CS) <<32 | (USER_CS) << 48);
    uint64_t mask = X86_EFLAGS_TF|X86_EFLAGS_DF|X86_EFLAGS_IF|
 	           X86_EFLAGS_IOPL|X86_EFLAGS_AC|X86_EFLAGS_NT;
-   uint64_t efer_val = 0x11111111;
+   uint64_t efer_val; 
  
     efer_val = rdmsr(MSR_EFER);
-    __asm__ __volatile__ ("rdmsr"
-                         : "=A"(efer_val) 
-                         :"c"((uint32_t)MSR_EFER));
-    kprintf("efer_val - %x\n", efer_val);
-    
-    __asm__ __volatile__ ("wrmsr"
-                         :
-                         : "c"((uint32_t)MSR_EFER), "A"(efer_val|EFER_SCE));
     wrmsr(MSR_EFER, efer_val|EFER_SCE);
-    __asm__ __volatile__ ("wrmsr"
-                         :
-                         : "c"((uint32_t)MSR_STAR), "A"(star_val));
     wrmsr(MSR_STAR, star_val);
-
-    __asm__ __volatile__ ("wrmsr"
-                         :
-                         : "c"((uint32_t)MSR_LSTAR), "A"(0x123456789abcdeULL));
-                         //: "c"((uint32_t)MSR_LSTAR), "A"((uint64_t)_syscall_entry));
     wrmsr(MSR_LSTAR, (uint64_t)_syscall_entry);
-
-    __asm__ __volatile__ ("rdmsr"
-                         : "=A"(efer_val) 
-                         :"c"((uint32_t)MSR_LSTAR));
-    efer_val = rdmsr(MSR_LSTAR);
-    kprintf("lstar_val - %x\n", efer_val);
-    
-    __asm__ __volatile__ ("wrmsr"
-                         :
-                         : "c"((uint32_t)MSR_CSTAR), "A"((uint64_t)_syscall_entry));
     wrmsr(MSR_CSTAR, (uint64_t)_syscall_entry);
-    __asm__ __volatile__ ("wrmsr"
-                         :
-                         : "c"((uint32_t)MSR_SYSCALL_MASK), "A"(mask));
     wrmsr(MSR_SYSCALL_MASK, mask);
 }
 
 void sys_write()
 {
    kprintf("I'm inside write call\n");
-   //while (1);
 }

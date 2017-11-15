@@ -37,7 +37,7 @@ uswitch_task:
    pushq $0x23        #SS
    pushq %rsp         #stack pointer
    pushf              #push rflags
-   pushq $0x1B        #CS
+   pushq $0x2B        #CS
    pushq %rax         #rip
    #movq %rax, (%rsp) 
 //   popq %rdx

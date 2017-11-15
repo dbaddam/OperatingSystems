@@ -27,5 +27,4 @@ _syscall_entry:
    popq %rdi
    popq %rax
    sti
-   sysret
-   #iretq
+   sysretq
