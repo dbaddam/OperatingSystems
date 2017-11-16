@@ -178,13 +178,13 @@ int readwrite(hba_port_t *port, uint64_t startl, uint64_t starth,
    return 1;
 }
 
-int read(hba_port_t *port, uint64_t startl, uint64_t starth, 
+int ahci_read(hba_port_t *port, uint64_t startl, uint64_t starth, 
               uint64_t count, uint64_t *buf)
 {
    return readwrite(port, startl, starth, count, buf, 1);
 }
 
-int write(hba_port_t *port, uint64_t startl, uint64_t starth, 
+int ahci_write(hba_port_t *port, uint64_t startl, uint64_t starth, 
               uint64_t count, uint64_t *buf)
 {
    return readwrite(port, startl, starth, count, buf, 0);
@@ -210,14 +210,14 @@ void ahci()
     for (i = 0;i < 100;i++)
     {
        memset((void*) buf, i, 4*1024);
-       write(port, 8*i, 0, 8, (uint64_t *)buf);
+       ahci_write(port, 8*i, 0, 8, (uint64_t *)buf);
     }
     kprintf("Done writing\n");
     
     kprintf("Verifying by reading back...\n");
     for (i = 0;i < 100;i++)
     { 
-       read(port, 8*i, 0, 8, (uint64_t *)buf);
+       ahci_read(port, 8*i, 0, 8, (uint64_t *)buf);
        ch = (char) i;
 
        for (j = 0;j < 4*1024;j++)

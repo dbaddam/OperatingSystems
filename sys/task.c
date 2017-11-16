@@ -1,4 +1,5 @@
 #include <sys/os.h>
+#include <unistd.h>
 
 static task task1;
 static task task2;
@@ -15,8 +16,10 @@ void kill_task();
 
 void user_main()
 {
+   char* buf = "Sending message from userland";
    kprintf("Hello user\n");
-   __asm__ __volatile__("syscall\n\t"::);
+   write(1, buf, sizeof(buf));
+   //__asm__ __volatile__("syscall\n\t"::);
    kprintf("Hello user 2\n");
    
    while(1);

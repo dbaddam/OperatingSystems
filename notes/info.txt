@@ -3,3 +3,23 @@ required to preserve their values. In other words, a called function must preser
 these registers' values for its caller. Remaining registers "belong" to the called
 function. If a calling function wants to preserve such a register value across a
 function call, it must save the value in its local stack frame.
+/*                                                                                                            
+ * C ABI says these regs are callee-preserved. They aren't saved on kernel entry                              
+ * unless syscall needs a complete, fully filled "struct pt_regs".                                            
+ */                                                                                                           
+#define R15             0*8                                                                                   
+#define R14             1*8                                                                                   
+#define R13             2*8                                                                                   
+#define R12             3*8                                                                                   
+#define RBP             4*8                                                                                   
+#define RBX             5*8                                                                                   
+/* These regs are callee-clobbered. Always saved on kernel entry. */                                          
+#define R11             6*8                                                                                   
+#define R10             7*8                                                                                   
+#define R9              8*8                                                                                   
+#define R8              9*8                                                                                   
+#define RAX             10*8                                                                                  
+#define RCX             11*8                                                                                  
+#define RDX             12*8                                                                                  
+#define RSI             13*8                                                                                  
+#define RDI             14*8                                                

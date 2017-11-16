@@ -17,12 +17,12 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
 {
   kprintf("tarfs in [%p:%p]\n", &_binary_tarfs_start, &_binary_tarfs_end);
   init_mem(modulep, &kernmem, physbase, physfree);
-  //picremap(MASTER_PIC_OFFSET, SLAVE_PIC_OFFSET);
+  picremap(MASTER_PIC_OFFSET, SLAVE_PIC_OFFSET);
   kprintf("tarfs in [%p:%p]\n", &_binary_tarfs_start, &_binary_tarfs_end);
   init_idt();
   init_syscall();
   init_task_system();
-//  register_all_irqs();
+  //register_all_irqs();
   //pci_enum();
 
   while (1)
