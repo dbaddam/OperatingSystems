@@ -147,8 +147,9 @@ void init_mem(uint32_t *modulep, void* kernmem, void *physbase, void *physfree){
   create_page_tables(KERNEL_BASE, 
                      /* TODOKISHAN - We have to better this. At this point, a new page
                         table created after the following address will fail */
-                     //KERNEL_BASE + (1 << 26) - 1,
-                     KERNEL_BASE + (kernel_pages*PAGE_SIZE) + (100*PAGE_SIZE) - 1,
+                     KERNEL_BASE + (last_access_mem/PAGE_SIZE*PAGE_SIZE) - 1,
+//                     KERNEL_BASE + (1 << 30) - 1,
+                     //KERNEL_BASE + (kernel_pages*PAGE_SIZE) + (100*PAGE_SIZE) - 1,
                      0, pml4, PG_U|PG_P|PG_RW);
   kprintf("Done creating page tables\n");
   //sleep(5);
@@ -340,7 +341,7 @@ void create_page_tables(uint64_t start_logical_address,
    {
       if (i %1000 == 0)
       {
-         kprintf("page - %d\n", i);
+         //kprintf("page - %d\n", i);
          //sleep(1);
       }
       i++;

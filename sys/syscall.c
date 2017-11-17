@@ -1,5 +1,5 @@
 #include <sys/os.h>
-
+#include <syscall.h>
 #define _BITUL(x)       (1ULL << x) 
 #define __AC(X,Y)       (X##Y)                                                                                
 #define _AC(X,Y)        __AC(X,Y)   
@@ -63,7 +63,6 @@
 #define USER_SS   0x23ULL
 
 
-
 void init_syscall()
 {
    uint64_t star_val = ((KERNEL_CS) <<32 | (USER_CS) << 48);
@@ -79,7 +78,24 @@ void init_syscall()
     wrmsr(MSR_SYSCALL_MASK, mask);
 }
 
-void sys_write()
+size_t sys_write(int fd, char* buf, int size)
 {
-   kprintf("I'm inside write call\n");
+   kprintf("%s\n", buf);
+   return size;
+}
+
+/* If we want to add a 6th parameter to this function, we have to change
+ * syscall_entry.s */
+uint64_t syscall_handler(uint64_t p1, uint64_t p2, uint64_t p3, uint64_t p4,
+                         uint64_t p5, uint64_t sysnum)
+{
+   switch(sysnum)
+   {
+      case __NR_write:
+         return sys_write((int)p1, (char*)p2, (int)p3);
+         break;
+      default:
+         ERROR("Unknown syscall - %d\n",sysnum);
+   }
+   return 0; 
 }

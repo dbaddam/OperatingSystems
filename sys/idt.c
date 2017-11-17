@@ -52,9 +52,9 @@ static struct idtr_t idtr = {sizeof(idt)-1, (uint64_t)idt};
 
 void _x86_64_asm_lidt(struct idtr_t *idtr);
 
-void dummyitr()
+void dummyitr(uint64_t* inum)
 {
-//    kprintf("dummyitr\n");
+    kprintf("dummyitr - %d\n", inum);
 }
 
 void init_idt()
@@ -65,7 +65,7 @@ void init_idt()
    {
        register_irq(i, (uint64_t) &dummyitr);
    }
-
+   register_all_irqs();
   //_x86_64_asm_lidt(&idtr);
    __asm__ __volatile__("cli\n\t"
                         "lidt (%0)\n\t"
