@@ -25,6 +25,9 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
 //  register_all_irqs();
   //pci_enum();
 
+  init_tarfs();  
+
+
   while (1)
   {
     kprintf("Idle task\n");
