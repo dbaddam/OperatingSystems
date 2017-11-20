@@ -54,7 +54,7 @@ void _x86_64_asm_lidt(struct idtr_t *idtr);
 
 void dummyitr(uint64_t* inum)
 {
-    kprintf("dummyitr - %d\n", inum);
+    ERROR("dummyitr - %d\n", inum);
 }
 
 void init_idt()

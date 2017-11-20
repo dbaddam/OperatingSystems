@@ -27,7 +27,7 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
 
   init_tarfs();  
 
-
+  //while(1);
   while (1)
   {
     kprintf("Idle task\n");
