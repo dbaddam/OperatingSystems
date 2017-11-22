@@ -24,4 +24,7 @@ struct posix_header_ustar {
   char pad[12];
 };
 
+//shall define all the functions we mentioned in the tarfs.c
+void init_tarfs();
+int oct2bin(unsigned char *str, int size);
 #endif

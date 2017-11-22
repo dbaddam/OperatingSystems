@@ -9,6 +9,7 @@ typedef int boolean;
 #define width 160
 #define height 20
 
+char buffer[MAX_BUFFER];
 int stringlen(const char *a) 
 {
     int length = 0;
@@ -149,7 +150,6 @@ void kprintf(const char *fmt, ...)
 
     // as of now hard coded, but size shall depend on size of fmt 
     // considering substitution of %s
-    char buffer[stringlen(fmt) + MAX_BUFFER];
 
     int k=0;
     for(int i=0; fmt[i]!='\0';i++)
