@@ -19,15 +19,23 @@ struct _task{
    uint64_t reg_rip;
    uint64_t reg_cr3;
    uint64_t reg_rflags;
+   uint64_t reg_ursp;
    
-   uint8_t* stack;
+   uint64_t  kstack[512];
+   uint8_t* ustack;    /* Once we have the ability to read elf64 and figure out where the
+                          stack is remove this*/
    struct _task* next;
+   uint64_t state;
+#define RUNNABLE_STATE 0x0001
    uint64_t flags_task;
-#define KILL_TASK 0x0001
-#define KERNEL_TASK 0x0002
+#define KILL_TASK       0x0001
+#define KERNEL_TASK     0x0002
+#define ALLOCATED_TASK  0x0004
 };
 
 typedef struct _task task;
+task tasks[MAX_PROCESSES];
+
 
 task* cur_task;
 

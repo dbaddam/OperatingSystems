@@ -10,9 +10,18 @@
 # The message in OSDev is 'All registers, except rcx and r11 
 # (and the return value, rax), are preserved during the syscall.'
 
+
+# Hack - I'll be using r14, r15 to swap user/kernel stack here
+# I have added them as clobber registers during syscall so, we
+# can use them here and not restore them. 
 _syscall_entry:
-   cli
-#   movq 40(cur_task), %rsp
+   #cli
+   # Swap the stack
+   movq %rsp, %r14
+   movq cur_task, %r15
+   movq %rsp, 80(%r15)
+   movq 40(%r15), %rsp
+
    pushq %rcx
    pushq %r8
    pushq %r9
@@ -22,18 +31,6 @@ _syscall_entry:
    pushq %rsi
    pushq %rdi
 #   pushq %rax
-#   call sys_write
-/* According to AMD64 ABI When 'call fn' is called, the function expects
-   the arguments to be in registers rdi, rsi, rdx, rcx, r8 and r9. But
-   for syscall, the first argument is*/
-/*
-   movq %r8, %r9
-   movq %r10, %r8
-   movq %rdx, %r10
-   movq %rsi, %rdx
-   movq %rdi, %rsi
-   movq %rax, %rdi
-*/
 /*Here we are basically messing up the 6th argument to pass syscall number */
    movq %rax, %r9
    callq syscall_handler
@@ -46,5 +43,6 @@ _syscall_entry:
    popq %r9
    popq %r8
    popq %rcx
-   sti
+   movq %r14, %rsp
+   #sti
    sysretq

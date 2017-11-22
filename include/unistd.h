@@ -31,6 +31,8 @@ int waitpid(int pid, int *status);
 pid_t getpid(void);
 pid_t getppid(void);
 
+void uyield();
+
 // OPTIONAL: implement for ``on-disk r/w file system (+10 pts)''
 #define SEEK_SET 0
 #define SEEK_CUR 1
@@ -52,7 +54,7 @@ __asm__ __volatile__ ( \
     "movq %%rax, %0\n\t" \
     : "=r"(sysret) \
     : "r"(__NR_##name) \
-    : "rax", "memory" \
+    : "rax", "memory", "r14", "r15" \
                      ); 
 
 #define syscall1(name, a1) \
@@ -64,7 +66,7 @@ __asm__ __volatile__ ( \
     "movq %%rax, %0\n\t" \
     : "=r"(sysret) \
     : "r"(__NR_##name), "r" ((ull)a1) \
-    : "rax", "rdi", "memory" \
+    : "rax", "rdi", "memory", "r14", "r15" \
                      ); 
 
 #define syscall2(name, a1, a2) \
@@ -77,7 +79,7 @@ __asm__ __volatile__ ( \
     "movq %%rax, %0\n\t" \
     : "=r"(sysret) \
     : "r"(__NR_##name), "r" ((ull)a1), "r" ((ull)a2) \
-    : "rax", "rdi", "rsi", "memory" \
+    : "rax", "rdi", "rsi", "memory", "r14", "r15" \
                      ); 
 
 #define syscall3(name, a1, a2, a3) \
@@ -91,7 +93,7 @@ __asm__ __volatile__ ( \
     "movq %%rax, %0\n\t" \
     : "=r"(sysret) \
     : "r"(__NR_##name), "r" ((ull)a1), "r" ((ull)a2), "r" ((ull)a3) \
-    : "rax", "rdi", "rsi", "rdx", "memory" \
+    : "rax", "rdi", "rsi", "rdx", "memory", "r14", "r15" \
                      ); 
 
 #define syscall4(name, a1, a2, a3, a4) \
@@ -106,6 +108,6 @@ __asm__ __volatile__ ( \
     "movq %%rax, %0\n\t" \
     : "=r"(sysret) \
     : "r"(__NR_##name), "r" ((ull)a1), "r" ((ull)a2), "r" ((ull)a3) \
-    : "rax", "rdi", "rsi", "rdx", "r10", "memory" \
+    : "rax", "rdi", "rsi", "rdx", "r10", "memory", "r14", "r15" \
                      ); 
 #endif

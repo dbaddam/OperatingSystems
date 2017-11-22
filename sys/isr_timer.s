@@ -1,5 +1,5 @@
-.globl _isr_timer
-.globl _isr_timer_init
+#.globl _isr_timer
+#.globl _isr_timer_init
 .align 8
 
 _isr_timer_init:

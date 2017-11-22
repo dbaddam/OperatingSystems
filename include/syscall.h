@@ -8,6 +8,7 @@
 #define __NR_lseek                              8ul
 #define __NR_access				21ul
 #define __NR_pipe                               22ul
+#define __NR_sched_yield			24ul
 #define __NR_dup2                               33ul
 #define __NR_getpid				39ul
 #define __NR_fork				57ul

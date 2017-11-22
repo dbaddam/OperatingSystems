@@ -27,6 +27,8 @@ void create_page_tables(uint64_t start_logical_address,
 */
 mem_pd* start_pd;
 mem_pd* head_freepd;
+uint64_t last_physaddr;
+
 
 void clear_page(void* ptr);
 uint64_t trans_addr(uint64_t ptr, uint64_t* pml4);
@@ -55,8 +57,11 @@ void init_mem(uint32_t *modulep, void* kernmem, void *physbase, void *physfree){
    
     }
   }
+
+  /* Making the last addressable memory 4K aligned*/
+  last_physaddr = (last_access_mem/PAGE_SIZE)*PAGE_SIZE;
   kprintf("physfree %p\n", (uint64_t)physfree);
-  kprintf("last_mem %p\n", (uint64_t)last_access_mem);
+  kprintf("Highest physaddr %p\n", (uint64_t)last_physaddr);
 
   /* The page descriptors start at start_pd*/ 
   start_pd = (mem_pd*)(KERNEL_BASE + (uint64_t)physfree);
@@ -79,7 +84,6 @@ void init_mem(uint32_t *modulep, void* kernmem, void *physbase, void *physfree){
        int low = smap->base/PAGE_SIZE;
        int high = (smap->base + smap->length)/PAGE_SIZE;
 
-       //kprintf("low - %d, high - %d\n", low, high);
        if (last_pd != 0)
        {
           last_pd->next = &start_pd[low];
@@ -88,7 +92,6 @@ void init_mem(uint32_t *modulep, void* kernmem, void *physbase, void *physfree){
        for (i = low ;i < high;i++){
           start_pd[i].flags = 0;
           start_pd[i].next = &start_pd[i+1];
-          //kprintf("pd[%d].next = %p, ", i, &pd[i+1]);
        }
        last_pd = &start_pd[high-1];
     }
@@ -98,10 +101,7 @@ void init_mem(uint32_t *modulep, void* kernmem, void *physbase, void *physfree){
 
 
 
-  if (last_access_mem%PAGE_SIZE)
-     pd_entries = last_access_mem/PAGE_SIZE + 1;
-  else
-     pd_entries = last_access_mem/PAGE_SIZE;
+  pd_entries = last_physaddr/PAGE_SIZE;
 
   if (pd_entries%PAGE_SIZE)
      pd_pages = (pd_entries*sizeof(mem_pd))/PAGE_SIZE + 1;
@@ -136,10 +136,6 @@ void init_mem(uint32_t *modulep, void* kernmem, void *physbase, void *physfree){
   kprintf("head_freepd - %p\n", head_freepd);
   kprintf("head_freepd index - %d\n", (head_freepd-start_pd));
 
-#define PML4_INDEX(ptr) ((((uint64_t)ptr) & 0x0000ff8000000000) >> 39)
-#define PDP_INDEX(ptr)  ((((uint64_t)ptr) & 0x0000007fc0000000) >> 30)
-#define PD_INDEX(ptr)   ((((uint64_t)ptr) & 0x000000003fe00000) >> 21)
-#define PT_INDEX(ptr)   ((((uint64_t)ptr) & 0x00000000001ff000) >> 12)
   uint64_t* pml4 = (uint64_t*) _get_page();
   kernel_pml4 = pml4;
   clear_page(pml4);
@@ -147,103 +143,23 @@ void init_mem(uint32_t *modulep, void* kernmem, void *physbase, void *physfree){
   create_page_tables(KERNEL_BASE, 
                      /* TODOKISHAN - We have to better this. At this point, a new page
                         table created after the following address will fail */
-                     KERNEL_BASE + (last_access_mem/PAGE_SIZE*PAGE_SIZE) - 1,
+                     KERNEL_BASE + last_physaddr - 1,
 //                     KERNEL_BASE + (1 << 30) - 1,
                      //KERNEL_BASE + (kernel_pages*PAGE_SIZE) + (100*PAGE_SIZE) - 1,
                      0, pml4, PG_U|PG_P|PG_RW);
   kprintf("Done creating page tables\n");
-  //sleep(5);
-
-/*
-  uint64_t* pdp = (uint64_t*) _get_page();
-  uint64_t* pd = (uint64_t*) _get_page();
-  uint64_t* pt1 = (uint64_t*) _get_page();
-  uint64_t* pt2 = (uint64_t*) _get_page();
-
-  clear_page(pml4);
-  clear_page(pdp);
-  clear_page(pd);
-  clear_page(pt1);
-  clear_page(pt2);
-
-  pml4[PML4_INDEX(KERNEL_BASE)] = PHYS_ADDR((uint64_t)pdp);
-  pml4[PML4_INDEX(KERNEL_BASE)] |= PG_P|PG_RW;
-  pdp[PDP_INDEX(KERNEL_BASE)] = PHYS_ADDR((uint64_t)pd);
-  pdp[PDP_INDEX(KERNEL_BASE)] |= PG_P|PG_RW;
-  pd[PD_INDEX(KERNEL_BASE)] = PHYS_ADDR((uint64_t)pt1);
-  pd[PD_INDEX(KERNEL_BASE)] |= PG_P|PG_RW;
-  pd[PD_INDEX(KERNEL_BASE)+1] = PHYS_ADDR((uint64_t)pt2);
-  pd[PD_INDEX(KERNEL_BASE)+1] |= PG_P|PG_RW;
-
-  kprintf("PML4 - %p, index = %d\n", pml4, PML4_INDEX(KERNEL_BASE));
-  kprintf("PDP - %p, index = %d\n", pdp, PDP_INDEX(KERNEL_BASE));
-  kprintf("PD - %p, index = %d\n", pd, PD_INDEX(KERNEL_BASE));
-  kprintf("pt1 - %p, index = %d\n", pt1, 1);
-  kprintf("pt2 - %p, index = %d\n", pt2, 2);
-  for ( i = 0;i < 512;i++)
-  {
-     pt1[i] = i*((uint64_t)PAGE_SIZE);
-     pt1[i] |= PG_P|PG_RW;
-  }
-*/
-  /* Why only upto kernel_pages?? */
-  /* You may have to add another set of pages to map lower memory */
-  //for (i = 512;i < kernel_pages;i++)
-/*
-  for (i = 512;i < 1024;i++)
-  {
-     pt2[i-512] = i*((uint64_t)PAGE_SIZE);
-     pt2[i-512] |= PG_P|PG_RW;
-  }
-*/
-  /*DELETE at some point of time*/ 
-/*
-  uint64_t* pdp1 = (uint64_t*) _get_page();
-  uint64_t* pd1 = (uint64_t*) _get_page();
-  uint64_t* pt3 = (uint64_t*) _get_page();
-
-  clear_page(pdp1);
-  clear_page(pd1);
-  clear_page(pt3);
-  pml4[0] = PHYS_ADDR((uint64_t)pdp1) | PG_P|PG_RW;
-  pdp1[0] = PHYS_ADDR((uint64_t)pd1) | PG_P|PG_RW;
-  pd1[0] = PHYS_ADDR((uint64_t)pt3) | PG_P|PG_RW;
-  for ( i = 0;i < 256;i++)
-  {
-     pt3[i] = i*((uint64_t)PAGE_SIZE);
-     pt3[i] |= PG_P|PG_RW;
-  }
-  */
-  //trans_addr(0xffffffff8020062e, PHYS_ADDR(pml4));
-  //kprintf("About to go into loop\n");
-/*
-   __asm__ __volatile__("movq %0, %%cr4"
-                         : 
-                         : "r"((uint64_t)0));
-*/
    __asm__ __volatile__("movq %0, %%cr3"
                          : 
                          : "r"(PHYS_ADDR((uint64_t)(pml4))));
 }
 
-uint64_t* create_user_page_tables()
+uint64_t* init_user_pt()
 {
   uint64_t* pml4 = (uint64_t*) _get_page();
   clear_page(pml4);
 
-  /*TODOKISHAN - You have to remove PG_U in this call*/
-  create_page_tables(KERNEL_BASE, 
-                     /* TODOKISHAN - We have to better this. At this point, a new page
-                        table created after the following address will fail */
-                     KERNEL_BASE + 1000*PAGE_SIZE -1,
-                     0, pml4, PG_P|PG_RW | PG_U);
-
-  create_page_tables(0, 
-                     /* TODOKISHAN - We have to better this. At this point, a new page
-                        table created after the following address will fail */
-                     1000*PAGE_SIZE- 1,
-                     0, pml4, PG_P|PG_RW |PG_U);
-  //trans_addr((uint64_t)pml4, (void*) PHYS_ADDR((uint64_t)pml4));
+  // Copy kernel page tables into this process
+  pml4[511] = kernel_pml4[511];
   return (uint64_t*)PHYS_ADDR((uint64_t)pml4);
 }
 
@@ -255,14 +171,24 @@ void* _get_page_phys()
    start_pd[head_freepd-start_pd].flags = USED_MEM_PD;
    head_freepd = head_freepd->next;
 
+   if (head_freepd == 0)
+      ERROR("Out of Memory head_freepd - %p\n", head_freepd);
+
    return (void*)ptr; 
 }
 
-/* _get_page_phys returns the pointer to the virtual address
+/* _get_page returns the pointer to the virtual address
  * of the page. This virtual address is w.r.t the KERNEL_BASE */
 void* _get_page()
 {
    return (void*)(KERNEL_BASE + ((uint64_t)_get_page_phys()));
+}
+
+void* kmalloc(uint64_t size){
+    if (size > PAGE_SIZE)
+       ERROR("kmalloc more than a size of page");
+
+    return _get_page();
 }
 
 uint64_t trans_addr(uint64_t ptr, uint64_t* pml4)
@@ -290,6 +216,10 @@ void _free_page(void* ptr)
    /* Raise an error if someone sent a free page's ptr
     */
    uint64_t index = ((uint64_t)(ptr)/PAGE_SIZE);
+
+   if (!bit (start_pd[index].flags, USED_MEM_PD))
+      ERROR("Memory never allocated - %p\n", ptr);
+
    start_pd[index].next = head_freepd;
 
    start_pd[index].flags &= ~USED_MEM_PD;
@@ -348,54 +278,6 @@ void create_page_tables(uint64_t start_logical_address,
       create_page_table_entry(logical_address, physical_address, pml4, flags);
    }
 
-   /*
-   // should I really clear this page??? if so il have to clear the 
-   // pages in the below for loops also
-   //clear_page(pml4);
-
-   uint64_t pml4_start_entry = PML4_INDEX(start_logical_address);
-   uint64_t pml4_end_entry = PML4_INDEX(end_logical_address);
-   
-   int i;
-   for(i = pml4_start_entry; i<= pml4_end_entry; i++)
-   {
-      uint64_t* pdp = (uint64_t*) _get_page();
-      clear_page(pdp);
-      pml4[i] = PHYS_ADDR((uint64_t)pdp);
-      pml4[i] |= PG_P|PG_RW;
-      
-      uint64_t pdp_start_entry = PDP_INDEX(start_logical_address);
-      uint64_t pdp_end_entry = PDP_INDEX(end_logical_address);
-      int j;
-      for(j = pdp_start_entry; j<= pdp_end_entry; j++)
-      {
-         uint64_t* pd = (uint64_t*) _get_page();
-         clear_page(pd);
-         pdp[j] = PHYS_ADDR((uint64_t)pd);
-         pdp[j] |= PG_P|PG_RW;
-         
-         uint64_t pd_start_entry = PD_INDEX(start_logical_address);
-         uint64_t pd_end_entry = PD_INDEX(end_logical_address);
-         int k;
-         for(k = pd_start_entry; k<= pd_end_entry; k++)
-         {
-            uint64_t* pt = (uint64_t*) _get_page();
-            clear_page(pt);
-            pd[k] = PHYS_ADDR((uint64_t)pt);
-            pd[k] |= PG_P|PG_RW;
-            
-            uint64_t pt_start_entry = PT_INDEX(start_logical_address);
-            uint64_t pt_end_entry = PT_INDEX(end_logical_address);
-            int l;
-            for(l = pt_start_entry; l<= pt_end_entry; l++)
-            {
-               pt[l] = (uint64_t)start_physical_address;
-               start_physical_address += (uint64_t)PAGE_SIZE;
-            }  
-         }
-      }
-   }
-   */
 }
 
 

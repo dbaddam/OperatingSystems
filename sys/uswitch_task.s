@@ -31,7 +31,7 @@ uswitch_task:
    movq 16(%r8), %r13
    movq 24(%r8), %r12
    movq 32(%r8), %rbp
-   movq 40(%r8), %rsp
+   movq 80(%r8), %rsp          # Since we're moving into userspace, change to user register
    movq 48(%r8), %rbx
    movq 56(%r8), %rax
    pushq $0x23        #SS
