@@ -44,7 +44,7 @@ int sbustrncmp(char *str1, char *str2, int size)
 int sbusubstr(char *str1, char *str2)
 {
    int size = sbustrlen(str2);
-   return sbustrn(str1, str2, size);
+   return sbustrncmp(str1, str2, size);
 }
 
 
