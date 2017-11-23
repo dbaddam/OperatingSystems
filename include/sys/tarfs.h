@@ -27,4 +27,5 @@ struct posix_header_ustar {
 //shall define all the functions we mentioned in the tarfs.c
 void init_tarfs();
 int oct2bin(unsigned char *str, int size);
+int getFileFromTarfs(char *, char** filecontent);
 #endif

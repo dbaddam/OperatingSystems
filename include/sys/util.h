@@ -6,4 +6,5 @@
 #define bic(value, flag) (value &= ~flag)
 
 void sleep(uint32_t sec);
+uint64_t min(uint64_t a, uint64_t b);
 #endif

@@ -6,3 +6,4 @@
 5. How much memory would be map inside kernel memory?
 6. What registers must be stored while handling syscall?
 7. What is long mode and compatibility mode?
+8. Add pid to the page descriptors

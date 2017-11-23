@@ -2,25 +2,12 @@
 #include <sys/util.h>
 #include <sys/kprintf.h>
 
-#define PG_P    0x001
-#define PG_RW   0x002
-#define PG_U    0x004
-#define PG_PS   0x080
 
-
-#define PHYS_ADDR(vaddr) ((vaddr) - KERNEL_BASE)
-#define VIRT_ADDR(paddr) ((paddr) + KERNEL_BASE)
 
 void create_page_table_entry(uint64_t logical_address,
                              uint64_t physical_address,
                              uint64_t* pml4,
                              uint16_t flags);
-
-void create_page_tables(uint64_t start_logical_address,
-                        uint64_t end_logical_address, 
-                        uint64_t start_physical_address, 
-                        uint64_t* pml4,
-                        uint16_t flags);
 
 /*  TODOKISHAN - get_free_page should return virtual address which
  *  would cascade a set of changes in the way page entries are filled.
@@ -123,6 +110,7 @@ void init_mem(uint32_t *modulep, void* kernmem, void *physbase, void *physfree){
 
   for (i = 0;i < kernel_pages;i++)
   {
+      start_pd[i].pid = 0;
       start_pd[i].flags = USED_MEM_PD;
   }
 
@@ -215,10 +203,13 @@ void _free_page(void* ptr)
 {
    /* Raise an error if someone sent a free page's ptr
     */
-   uint64_t index = ((uint64_t)(ptr)/PAGE_SIZE);
+   uint64_t index = (PHYS_ADDR((uint64_t)(ptr))/PAGE_SIZE);
 
    if (!bit (start_pd[index].flags, USED_MEM_PD))
       ERROR("Memory never allocated - %p\n", ptr);
+
+   if (start_pd[index].pid == 0)
+      ERROR("Memory not supposed to be deleted - %p\n", ptr);
 
    start_pd[index].next = head_freepd;
 

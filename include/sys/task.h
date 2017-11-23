@@ -5,6 +5,14 @@
 
 #define MAX_PROCESSES 1024
 
+
+struct _vma{
+  uint64_t start;
+  uint64_t end;
+  struct _vma* next;
+};
+typedef struct _vma vma;
+
 struct _task{
    /* It is very important that the registers stay at the top.
     * Bad things will happen otherwise. If you MUST change this, change
@@ -17,10 +25,11 @@ struct _task{
    uint64_t reg_rsp;
    uint64_t reg_rbx;
    uint64_t reg_rip;
-   uint64_t reg_cr3;
+   uint64_t reg_cr3;   /* We always store the PHYSICAL ADDRESS in this */
    uint64_t reg_rflags;
    uint64_t reg_ursp;
    
+   vma* mm_struct;
    uint64_t  kstack[512];
    uint8_t* ustack;    /* Once we have the ability to read elf64 and figure out where the
                           stack is remove this*/
@@ -46,4 +55,6 @@ void yield();
 void switch_task(task* old, task* new);
 void uswitch_task(task* old, task* new);
 void user_main();
+uint64_t get_cur_cr3();
+void start_sbush();
 #endif

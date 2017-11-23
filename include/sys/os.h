@@ -10,4 +10,6 @@
 #include <sys/syscall.h>
 #include <sys/util.h>
 #include <sys/asm.h>
+#include <sys/tarfs.h>
+#include <sys/elf64.h>
 #endif

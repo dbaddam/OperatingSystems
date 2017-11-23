@@ -1,6 +1,8 @@
 #include <sys/kprintf.h>
 #include <sys/defs.h>
 #include <sys/elf64.h>
+#include <sys/task.h>
+#include <sys/util.h>
 
 typedef int bool;
 #define true  1
@@ -69,6 +71,29 @@ static inline void *elf_load_rel(Elf64_Ehdr *hdr)
 }
 
 
+void copy_contents(uint64_t vaddr, uint64_t contents, uint64_t fsize, uint64_t msize)
+{
+   uint64_t i,j;
+   uint8_t* from = (uint8_t*)vaddr;
+   uint8_t* to = (uint8_t*) contents;
+
+   for (i = 0;i < msize; i+= PAGE_SIZE)
+   {
+      /* We are doomed if section addresses do not align with PAGE boundaries */
+      uint64_t page = (uint64_t) _get_page();
+      create_page_tables(vaddr + i*PAGE_SIZE, vaddr + (i+1)*PAGE_SIZE - 1,
+                         PHYS_ADDR((uint64_t)page), (uint64_t*)VIRT_ADDR((uint64_t)get_cur_cr3()),
+                         PG_P|PG_RW|PG_U);
+
+      for (j = i;j < min(msize, PAGE_SIZE);j++)
+      {
+         if (j < fsize)
+            to[j] = from[j];
+         else
+            to[j] = 0;
+      }
+   }
+}
 void get_pheaders(Elf64_Ehdr *hdr)
 {
    //no. of program header table entries
@@ -76,10 +101,10 @@ void get_pheaders(Elf64_Ehdr *hdr)
    int phtEntries = hdr->e_phnum;
     
    //start program header pointer
-   Elf64_Phdr *pheaders = (Elf64_Phdr *)((uint64_t)hdr + hdr->e_phoff);
-   
+   Elf64_Phdr *pheaders = (Elf64_Phdr *)((uint64_t)hdr + hdr->e_phoff); 
    kprintf("phtEntries = %d\n",phtEntries);
    int i=0;
+   cur_task->reg_rip = (uint64_t)hdr->e_entry;
    for(i=0;i<phtEntries;i++)
    {
       Elf64_Phdr *phdr = &pheaders[i];
@@ -87,7 +112,8 @@ void get_pheaders(Elf64_Ehdr *hdr)
       uint64_t seg_fsize  = (uint64_t)(phdr->p_filesz);
       uint64_t seg_msize = (uint64_t)(phdr->p_memsz);
       uint64_t seg_vaddr = (uint64_t)(phdr->p_vaddr);
-      
+
+      copy_contents(seg_vaddr, seg_addr, seg_fsize, seg_msize); 
       kprintf("i=%d",i);
       kprintf("segment start_addr=%p,fsz=%d,msz=%d,vaddr=%p\n",seg_addr,seg_fsize,seg_msize,seg_vaddr);  
    }

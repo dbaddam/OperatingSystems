@@ -51,6 +51,7 @@ void create_kernel_task(task* t, void (*main)(), uint64_t flags)
    //t->reg_rflags = flags;
    t->reg_cr3 = (uint64_t) kernel_pml4;
    t->state = RUNNABLE_STATE;
+   t->mm_struct = 0;
    bis(t->flags_task, KERNEL_TASK);
  
    t->kstack[510] = 0; 
@@ -72,14 +73,76 @@ void create_user_task(void (*main)(), uint64_t flags)
       ERROR("Out of processes");
 
    t = &tasks[i];
+   cur_task = t;
    bis(t->flags_task, ALLOCATED_TASK);
-   //uint64_t* pml4 = create_user_page_tables();
    create_kernel_task(t, main, flags);
-   t->ustack = (uint8_t*) kmalloc(PAGE_SIZE);
-   t->reg_ursp = ((uint64_t)t->ustack)+ PAGE_SIZE - 8;
-   //t->reg_cr3 = (uint64_t)pml4;
-   //t->reg_rip = t->reg_rip;//%(1<<30);
+   t->reg_cr3 = (uint64_t)init_user_pt();
+   __asm__ __volatile__("movq %0, %%cr3"
+                        :
+                        : "r"(t->reg_cr3));
+  
+   uint64_t page = (uint64_t )_get_page(); 
+   t->ustack = (uint8_t*) USER_STACK_TOP;
+   t->reg_ursp = ((uint64_t)t->ustack)+ PAGE_SIZE;
+   create_page_tables(USER_STACK_TOP, USER_STACK_TOP + PAGE_SIZE - 1,
+                         PHYS_ADDR((uint64_t)page), (uint64_t*)VIRT_ADDR((uint64_t)get_cur_cr3()),
+                         PG_P|PG_RW|PG_U);
    bic(t->flags_task, KERNEL_TASK);
+}
+
+void start_sbush()
+{
+   char* file_content;
+   task* t;
+   uint64_t fsize;
+
+   create_user_task(NULL, 0);
+   t = cur_task;
+   fsize = getFileFromTarfs("bin/sbush", &file_content);
+   if (fsize != 0)
+   {
+      kprintf("Starting sbush....\n");
+      elf_load_file(file_content);
+   }
+
+   __asm__ __volatile__("pushq $0x23\n\t"
+                        "pushq %0\n\t"
+                        "pushf\n\t"
+                        "pushq $0x2B\n\t"
+                        "pushf\n\t"
+                        "pushq %1"
+                         : 
+                         : "g"(t->reg_ursp), "g"(t->reg_rip));
+}
+
+void add_vma(uint64_t start, uint64_t size)
+{
+   vma* p;
+
+   task* t = cur_task;
+   if (t->mm_struct == 0)
+   {
+      p = (vma*)kmalloc(sizeof(vma));
+      t->mm_struct = p;
+      p->start = start;
+      p->end = start + size;
+      p->next = NULL; 
+   }
+   else
+   {
+      p = t->mm_struct;
+      while (p->next != NULL)p = p->next;
+      p->next = (vma*)kmalloc(sizeof(vma));
+      p = p->next;
+      p->start = start;
+      p->end = start + size;
+      p->next = NULL; 
+   }
+}
+
+uint64_t get_cur_cr3()
+{
+   return cur_task->reg_cr3;
 }
 
 void kill_task()
@@ -141,8 +204,8 @@ void init_task_system()
 
    cur_task = &tasks[0]; 
    cur_task->next = cur_task;
-   create_user_task(user_main1, 0);
-   create_user_task(user_main2, 0);
+   //create_user_task(user_main1, 0);
+   //create_user_task(user_main2, 0);
 //   task1.next = &task2;
 //   task2.next = &task1;
 //   dummytask.next = &task1;
