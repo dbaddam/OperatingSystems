@@ -9,3 +9,10 @@ ssize_t write(int fd, const void *buf, size_t count)
 
   return (ssize_t) sysret;
 }
+
+void uyield()
+{
+  syscall0(sched_yield);
+
+  return;
+}

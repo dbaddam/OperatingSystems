@@ -20,6 +20,7 @@ uint64_t* kernel_pml4;
 
 
 void init_mem(uint32_t *modulep, void* kernmem, void *physbase, void *physfree);
+void* kmalloc(uint64_t size);
 void* _get_page();
 void  _free_page(void* ptr);
 uint64_t* create_user_page_tables();
