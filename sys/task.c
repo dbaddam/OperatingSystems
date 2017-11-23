@@ -17,9 +17,9 @@ void kill_task();
 void user_main1()
 {
    while (1){
-   char* buf = "Sending message from userland1";
+   //char* buf = "Sending message from userland1";
    kprintf("Hello user\n");
-   write(1, buf, sizeof(buf));
+   //write(1, buf, sizeof(buf));
    //__asm__ __volatile__("syscall\n\t"::);
    while(1);
    //uyield();
@@ -29,9 +29,9 @@ void user_main1()
 void user_main2()
 {
    while (1){
-   char* buf = "Sending message from userland2";
+   //char* buf = "Sending message from userland2";
    kprintf("Hello user\n");
-   write(1, buf, sizeof(buf));
+   //write(1, buf, sizeof(buf));
    //__asm__ __volatile__("syscall\n\t"::);
    //while(1);
    uyield();
@@ -51,7 +51,7 @@ void create_kernel_task(task* t, void (*main)(), uint64_t flags)
    //t->reg_rflags = flags;
    t->reg_cr3 = (uint64_t) kernel_pml4;
    t->state = RUNNABLE_STATE;
-   t->mm_struct = 0;
+   t->mm_struct.start  = t->mm_struct.end = 0;
    bis(t->flags_task, KERNEL_TASK);
  
    t->kstack[510] = 0; 
@@ -83,10 +83,11 @@ void create_user_task(void (*main)(), uint64_t flags)
   
    uint64_t page = (uint64_t )_get_page(); 
    t->ustack = (uint8_t*) USER_STACK_TOP;
-   t->reg_ursp = ((uint64_t)t->ustack)+ PAGE_SIZE;
-   create_page_tables(USER_STACK_TOP, USER_STACK_TOP + PAGE_SIZE - 1,
+   t->reg_ursp = ((uint64_t)t->ustack)- 40;
+   create_page_tables(USER_STACK_TOP - PAGE_SIZE, USER_STACK_TOP - 1,
                          PHYS_ADDR((uint64_t)page), (uint64_t*)VIRT_ADDR((uint64_t)get_cur_cr3()),
                          PG_P|PG_RW|PG_U);
+   add_vma(USER_STACK_TOP - PAGE_SIZE, PAGE_SIZE);
    bic(t->flags_task, KERNEL_TASK);
 }
 
@@ -98,46 +99,43 @@ void start_sbush()
 
    create_user_task(NULL, 0);
    t = cur_task;
-   fsize = getFileFromTarfs("bin/sbush", &file_content);
+   fsize = getFileFromTarfs("bin/simsh", &file_content);
    if (fsize != 0)
    {
       kprintf("Starting sbush....\n");
       elf_load_file(file_content);
    }
 
-   __asm__ __volatile__("pushq $0x23\n\t"
+   set_tss_rsp((void*)&t->kstack[511]);
+   __asm__ __volatile__(
+                        "movq %%cr3, %%rax\n\t" // Flush TLB
+                        "movq %%rax, %%cr3\n\t"
+                        "pushq $0x23\n\t"
                         "pushq %0\n\t"
                         "pushf\n\t"
                         "pushq $0x2B\n\t"
-                        "pushf\n\t"
-                        "pushq %1"
+                        "pushq %1\n\t"
+                        "iretq"
                          : 
-                         : "g"(t->reg_ursp), "g"(t->reg_rip));
+                         : "g"(t->reg_ursp), "g"(t->reg_rip)
+                         : "rax");
 }
 
+// add_vma inserts in a sorted order
 void add_vma(uint64_t start, uint64_t size)
 {
-   vma* p;
+   task *t = cur_task;
+   vma  *p = &t->mm_struct;
+   vma  *c;
 
-   task* t = cur_task;
-   if (t->mm_struct == 0)
-   {
-      p = (vma*)kmalloc(sizeof(vma));
-      t->mm_struct = p;
-      p->start = start;
-      p->end = start + size;
-      p->next = NULL; 
-   }
-   else
-   {
-      p = t->mm_struct;
-      while (p->next != NULL)p = p->next;
-      p->next = (vma*)kmalloc(sizeof(vma));
+   while (p->next != NULL && p->next->start < start)
       p = p->next;
-      p->start = start;
-      p->end = start + size;
-      p->next = NULL; 
-   }
+  
+   c = (vma*)kmalloc(sizeof(vma));
+   c->start = start;
+   c->end = start+size;
+   c->next = p->next;
+   p->next = c; 
 }
 
 uint64_t get_cur_cr3()

@@ -7,7 +7,7 @@
 #define PAGE_SIZE (1 << 12)
 #define KERNEL_BASE (0xffffffff80000000)
 
-#define USER_STACK_TOP (0xffffffff70000000)
+#define USER_STACK_TOP (0xffffff0000000000)
 
 #define PG_P    0x001
 #define PG_RW   0x002
@@ -16,6 +16,8 @@
 
 #define PHYS_ADDR(vaddr) ((vaddr) - KERNEL_BASE)
 #define VIRT_ADDR(paddr) ((paddr) + KERNEL_BASE)
+#define ADDR_FLOOR(addr) ((addr/PAGE_SIZE)*PAGE_SIZE)
+
 // Page descriptor
 struct mem_pd{
 #define INVALID_MEM_PD    0x00000001

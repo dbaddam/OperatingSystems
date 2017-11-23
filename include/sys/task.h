@@ -29,7 +29,7 @@ struct _task{
    uint64_t reg_rflags;
    uint64_t reg_ursp;
    
-   vma* mm_struct;
+   vma       mm_struct;  /* This is a vma struct, the first entry is a dummy */
    uint64_t  kstack[512];
    uint8_t* ustack;    /* Once we have the ability to read elf64 and figure out where the
                           stack is remove this*/
@@ -57,4 +57,5 @@ void uswitch_task(task* old, task* new);
 void user_main();
 uint64_t get_cur_cr3();
 void start_sbush();
+void add_vma(uint64_t start, uint64_t size);
 #endif

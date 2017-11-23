@@ -141,10 +141,10 @@ void init_tarfs()
    }
    
    char *filecontent;
-   int fsize = getFileFromTarfs("bin/ls", &filecontent);
+   int fsize = getFileFromTarfs("bin/sbush", &filecontent);
    if(fsize != 0)
    {
-      kprintf("bin/ls file found\n");
+      kprintf("bin/sbush file found\n");
       //kprintf("file content = %s\n",filecontent);
       //kprintf("last char = %d\n", *(filecontent+5)); 
       elf_load_file(filecontent);

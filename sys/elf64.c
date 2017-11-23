@@ -81,19 +81,20 @@ void copy_contents(uint64_t vaddr, uint64_t contents, uint64_t fsize, uint64_t m
    {
       /* We are doomed if section addresses do not align with PAGE boundaries */
       uint64_t page = (uint64_t) _get_page();
-      create_page_tables(vaddr + i*PAGE_SIZE, vaddr + (i+1)*PAGE_SIZE - 1,
+      create_page_tables(vaddr + i, vaddr + i + PAGE_SIZE - 1,
                          PHYS_ADDR((uint64_t)page), (uint64_t*)VIRT_ADDR((uint64_t)get_cur_cr3()),
                          PG_P|PG_RW|PG_U);
 
-      for (j = i;j < min(msize, PAGE_SIZE);j++)
+      for (j = i;j < min(msize, i+PAGE_SIZE);j++)
       {
          if (j < fsize)
-            to[j] = from[j];
+            from[j] = to[j];
          else
-            to[j] = 0;
+            from[j] = 0;
       }
    }
 }
+
 void get_pheaders(Elf64_Ehdr *hdr)
 {
    //no. of program header table entries
