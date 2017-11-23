@@ -40,6 +40,13 @@ int sbustrncmp(char *str1, char *str2, int size)
    return 1;
 }
 
+/* always str2 size > str1 size */
+int sbusubstr(char *str1, char *str2)
+{
+   int size = sbustrlen(str2);
+   return sbustrn(str1, str2, size);
+}
+
 
 
 /*
@@ -84,6 +91,31 @@ int getFileFromTarfs(char *filename, char **file_start_address)
       addr += (((filesize+511)/512)+1)*512;
    }
    return 0; 
+}
+
+
+void list_files_directory(char *dirname)
+{
+   uint64_t addr = (uint64_t) &_binary_tarfs_start;
+   int i=0;
+   for(i=0;;i++)
+   {   
+      struct posix_header_ustar *header;
+      header = (struct posix_header_ustar *)addr;
+      if(header->name[0]=='\0')
+      {   
+         break;
+      }
+      kprintf("found below files for dir=%s\n",dirname);
+      unsigned int filesize = oct2bin((unsigned char *)header->size, 11);
+      if(sbusubstr(header->name, dirname))
+      {   
+         kprintf("%s\n",header->name);
+
+      }   
+      addr += (((filesize+511)/512)+1)*512;
+   }   
+   return;
 }
 
 void init_tarfs()
