@@ -1,6 +1,7 @@
 .text
 
 .globl uswitch_task
+.globl save_child_state
 .align 8
 
 #EXTERN user_main
@@ -45,4 +46,17 @@ uswitch_task:
    #movq 64(%r8), %rax
    #movq %rax, %cr3
    iretq
-  
+
+ 
+/* rdi - parent 
+   rsi - child
+*/
+save_child_state: 
+   movq (%rsp), %rax
+   movq %rax, 56(%rsi) //Move this to child rip
+   retq
+
+flush_tlb: 
+   movq %cr3, %rax
+   movq %rax, %cr3
+   retq

@@ -10,6 +10,16 @@ void add_single_page(uint64_t addr)
                       PG_P|PG_RW|PG_U);
 }
 
+void flush_tlb()
+{
+   
+   __asm__ __volatile__(
+                        "movq %%cr3, %%rax\n\t" // Flush TLB
+                        "movq %%rax, %%cr3\n\t"
+                         : 
+                         :
+                         : "rax");
+}
 
 void isr_page_fault(uint64_t eno, uint64_t cr2)
 {
@@ -17,6 +27,7 @@ void isr_page_fault(uint64_t eno, uint64_t cr2)
    vma  *p = &t->mm_struct;
    vma  *lastp; 
 
+   kprintf("page_fault -%p\n",cr2);
    // Skip the dummy entry
    lastp = p;
    p = p->next;
@@ -24,7 +35,47 @@ void isr_page_fault(uint64_t eno, uint64_t cr2)
    {
       if (cr2 >= p->start && cr2 < p->end)
       {
-         add_single_page(cr2);
+         if (eno == 7) // Present | USER |WRITE
+         {
+            uint64_t pte;
+            uint64_t vaddr = cr2;
+            if (trans_vaddr_pt(vaddr, &pte) &&
+                bit(pte, PG_COW))              // COW
+            {
+                uint64_t old_page = VIRT_ADDR(CL12(pte));
+                uint64_t ref_count = get_pd_ref(old_page);
+                if (ref_count == 1)
+                {
+                   /* If there is only one page referencing this,
+                      just update the flags */
+                   create_page_tables(ADDR_FLOOR(vaddr), 
+                           ADDR_FLOOR(vaddr) + PAGE_SIZE -1,
+                           CL12(pte),
+                           (uint64_t*)VIRT_ADDR((uint64_t)get_cur_cr3()),
+                           PG_P|PG_RW|PG_U);
+                }
+                else
+                {
+                   kprintf("COW %p\n",vaddr);
+                   uint64_t new_page = (uint64_t) _get_page();
+                   memcpy((char*)new_page, (char*)old_page, PAGE_SIZE);
+
+                   /* Update the address to the new page and remove COW
+                      flags */ 
+                   create_page_tables(ADDR_FLOOR(vaddr), 
+                           ADDR_FLOOR(vaddr) + PAGE_SIZE -1,
+                           PHYS_ADDR(new_page),
+                           (uint64_t*)VIRT_ADDR((uint64_t)get_cur_cr3()),
+                           PG_P|PG_U|PG_RW);
+                   decr_pd_ref(old_page);
+                }
+                flush_tlb();
+            }
+            else
+            {
+                ERROR("isr_page_fault eno - %p, cr2 - %p\n");
+            }
+         }
          return;
       }
       lastp = p;
@@ -35,6 +86,7 @@ void isr_page_fault(uint64_t eno, uint64_t cr2)
    if (p == NULL && cr2 > lastp->start - PAGE_SIZE)
    {
       add_single_page(cr2);
+      flush_tlb();
       lastp->start -= PAGE_SIZE;  // Increase the stack size
       return; 
    }

@@ -103,6 +103,9 @@ uint64_t syscall_handler(uint64_t p1, uint64_t p2, uint64_t p3, uint64_t p4,
       case __NR_sched_yield:
          return sys_yield(); 
          break;
+      case __NR_fork:
+         return fork(); 
+         break;
       default:
          ERROR("Unknown syscall - %d\n",sysnum);
    }

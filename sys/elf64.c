@@ -71,7 +71,8 @@ static inline void *elf_load_rel(Elf64_Ehdr *hdr)
 }
 
 
-void copy_contents(uint64_t vaddr, uint64_t contents, uint64_t fsize, uint64_t msize)
+void elf_copy_contents(uint64_t vaddr, uint64_t contents, uint64_t fsize, 
+                       uint64_t msize, uint64_t cr3)
 {
    uint64_t i,j;
    uint8_t* from = (uint8_t*)vaddr;
@@ -82,7 +83,7 @@ void copy_contents(uint64_t vaddr, uint64_t contents, uint64_t fsize, uint64_t m
       /* We are doomed if section addresses do not align with PAGE boundaries */
       uint64_t page = (uint64_t) _get_page();
       create_page_tables(vaddr + i, vaddr + i + PAGE_SIZE - 1,
-                         PHYS_ADDR((uint64_t)page), (uint64_t*)VIRT_ADDR((uint64_t)get_cur_cr3()),
+                         PHYS_ADDR((uint64_t)page), (uint64_t*)VIRT_ADDR(cr3),
                          PG_P|PG_RW|PG_U);
 
       for (j = i;j < min(msize, i+PAGE_SIZE);j++)
@@ -95,7 +96,7 @@ void copy_contents(uint64_t vaddr, uint64_t contents, uint64_t fsize, uint64_t m
    }
 }
 
-void get_pheaders(Elf64_Ehdr *hdr)
+void get_pheaders(Elf64_Ehdr *hdr, uint64_t cr3)
 {
    //no. of program header table entries
    // WARNING: Do we have to care for big-endian/little-endian conversion
@@ -114,7 +115,7 @@ void get_pheaders(Elf64_Ehdr *hdr)
       uint64_t seg_msize = (uint64_t)(phdr->p_memsz);
       uint64_t seg_vaddr = (uint64_t)(phdr->p_vaddr);
 
-      copy_contents(seg_vaddr, seg_addr, seg_fsize, seg_msize); 
+      elf_copy_contents(seg_vaddr, seg_addr, seg_fsize, seg_msize,cr3); 
       kprintf("i=%d",i);
       kprintf("segment start_addr=%p,fsz=%d,msz=%d,vaddr=%p\n",seg_addr,seg_fsize,seg_msize,seg_vaddr);  
    }
@@ -127,7 +128,7 @@ void get_pheaders(Elf64_Ehdr *hdr)
 /* load a given file, ie from tarfs we get the start address of file content, may be 
  * that should be passed here
  */
-void *elf_load_file(void *file)
+void *elf_load_file(void *file, uint64_t cr3)
 {
    Elf64_Ehdr *hdr = (Elf64_Ehdr *)file;
    if(!elf_check_supported(hdr)) return NULL;
@@ -137,7 +138,7 @@ void *elf_load_file(void *file)
       case ET_EXEC:
                   //TODO: Implement this later
                   kprintf("It is executable elf file !! \n");
-                  get_pheaders(hdr);
+                  get_pheaders(hdr, cr3);
                   return NULL;
       case ET_REL:
                  ;

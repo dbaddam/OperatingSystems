@@ -147,6 +147,6 @@ void init_tarfs()
       kprintf("bin/sbush file found\n");
       //kprintf("file content = %s\n",filecontent);
       //kprintf("last char = %d\n", *(filecontent+5)); 
-      elf_load_file(filecontent);
+      elf_load_file(filecontent, 0);
    } 
 }

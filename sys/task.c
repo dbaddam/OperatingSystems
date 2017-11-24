@@ -1,6 +1,12 @@
 #include <sys/os.h>
-#include <unistd.h>
 
+task tasks[MAX_PROCESSES];
+uint64_t run_queue[MAX_PROCESSES+1];
+uint64_t spd_queue[MAX_PROCESSES+1];
+uint32_t run_head;
+uint32_t run_tail;
+uint32_t spd_head;
+uint32_t spd_tail;
 //static task task1;
 //static task task2;
 //static task dummytask;
@@ -33,8 +39,8 @@ void user_main2()
    kprintf("Hello user\n");
    //write(1, buf, sizeof(buf));
    //__asm__ __volatile__("syscall\n\t"::);
-   //while(1);
-   uyield();
+   while(1);
+   //uyield();
    }
 }
 
@@ -85,7 +91,7 @@ void create_user_task(void (*main)(), uint64_t flags)
    t->ustack = (uint8_t*) USER_STACK_TOP;
    t->reg_ursp = ((uint64_t)t->ustack)- 40;
    create_page_tables(USER_STACK_TOP - PAGE_SIZE, USER_STACK_TOP - 1,
-                         PHYS_ADDR((uint64_t)page), (uint64_t*)VIRT_ADDR((uint64_t)get_cur_cr3()),
+                         PHYS_ADDR((uint64_t)page), (uint64_t*)VIRT_ADDR(t->reg_cr3),
                          PG_P|PG_RW|PG_U);
    add_vma(USER_STACK_TOP - PAGE_SIZE, PAGE_SIZE);
    bic(t->flags_task, KERNEL_TASK);
@@ -103,7 +109,7 @@ void start_sbush()
    if (fsize != 0)
    {
       kprintf("Starting sbush....\n");
-      elf_load_file(file_content);
+      elf_load_file(file_content, t->reg_cr3);
    }
 
    set_tss_rsp((void*)&t->kstack[511]);
@@ -118,7 +124,7 @@ void start_sbush()
                         "iretq"
                          : 
                          : "g"(t->reg_ursp), "g"(t->reg_rip)
-                         : "rax");
+                         : "rax", "memory");
 }
 
 // add_vma inserts in a sorted order
@@ -192,6 +198,11 @@ static void main2()
 
 void init_task_system()
 {
+   int i;
+   for (i = 0;i < MAX_PROCESSES;i++)
+       tasks[i].pid = i;
+
+   run_head = run_tail = spd_head = spd_tail = 0; 
    //void* rsp = _get_page();
    //cur_task = &maintask; 
    //cur_task->next = &maintask; 
@@ -240,4 +251,58 @@ void yield()
    //   kprintf("Killing a task\n");
       // Free stack page
    //}
+}
+
+void copy_vmas(vma* dst, vma* src)
+{
+   vma *c;
+   vma *d_c = dst;
+   while (src != NULL)
+   {
+      c = (vma*)_get_page();
+      c->start = src->start;
+      c->end = src->end; 
+      d_c->next = c;
+      d_c = d_c->next;
+      src = src->next;
+   }
+
+   d_c->next = NULL;
+}
+
+uint64_t fork()
+{
+   task* volatile c;
+   task* volatile p;
+   int   i;
+
+   for (i = 0;i < MAX_PROCESSES;i++)
+   {
+       if (!bit(tasks[i].flags_task, ALLOCATED_TASK))
+          break;
+   }
+
+   if (i == MAX_PROCESSES)
+      ERROR("Out of processes");
+
+   p = cur_task; 
+   c = &tasks[i];
+   bis(c->flags_task, ALLOCATED_TASK);
+
+   memcpy((char*)c, (char*)p, sizeof(task));
+   c->pid = i;
+   c->ppid = p->pid;
+   copy_vmas(&c->mm_struct, &p->mm_struct);
+
+   mem_info();
+   c->reg_cr3 = copy_page_tables(c, p);
+   flush_tlb(); 
+   // add to queues
+
+   save_child_state(p, c);
+
+   if (cur_task->pid == p->pid)
+      return c->pid;
+   else
+      return 0; 
 }

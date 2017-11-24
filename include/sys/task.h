@@ -17,14 +17,14 @@ struct _task{
    /* It is very important that the registers stay at the top.
     * Bad things will happen otherwise. If you MUST change this, change
     * switch_task.s as well */
-   uint64_t reg_r15;
-   uint64_t reg_r14;
-   uint64_t reg_r13;
-   uint64_t reg_r12;
-   uint64_t reg_rbp;
-   uint64_t reg_rsp;
-   uint64_t reg_rbx;
-   uint64_t reg_rip;
+   uint64_t reg_r15;   // 0
+   uint64_t reg_r14;   // 8
+   uint64_t reg_r13;   //16
+   uint64_t reg_r12;   //24
+   uint64_t reg_rbp;   //32
+   uint64_t reg_rsp;   //40
+   uint64_t reg_rbx;   //48
+   uint64_t reg_rip;   //56
    uint64_t reg_cr3;   /* We always store the PHYSICAL ADDRESS in this */
    uint64_t reg_rflags;
    uint64_t reg_ursp;
@@ -35,6 +35,8 @@ struct _task{
                           stack is remove this*/
    struct _task* next;
    uint64_t state;
+   uint64_t pid;
+   uint64_t ppid;
 #define RUNNABLE_STATE 0x0001
    uint64_t flags_task;
 #define KILL_TASK       0x0001
@@ -43,7 +45,6 @@ struct _task{
 };
 
 typedef struct _task task;
-task tasks[MAX_PROCESSES];
 
 
 task* cur_task;
@@ -58,4 +59,6 @@ void user_main();
 uint64_t get_cur_cr3();
 void start_sbush();
 void add_vma(uint64_t start, uint64_t size);
+void save_child_state(task* p, task* c);
+uint64_t fork();
 #endif

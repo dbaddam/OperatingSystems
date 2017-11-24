@@ -357,6 +357,16 @@ int main(int argc, char *argv[], char *envp[])
    h[2] = '\0';
    write(1, h, 2);
 
+   if (fork() == 0)
+   {
+      write (1, "Child", 5);
+   }
+   else
+   {
+      write (1, "Parent", 6);
+      h[1] = ';';
+      write(1,h,2);
+   }
    //rec(NULL);
    while(1);
    return 0;
