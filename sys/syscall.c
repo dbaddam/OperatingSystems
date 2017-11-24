@@ -84,27 +84,29 @@ size_t sys_write(int fd, char* buf, int size)
    return size;
 }
 
-int sys_yield()
-{
-   yield();
-   return 1;
-}
 
 /* If we want to add a 6th parameter to this function, we have to change
  * syscall_entry.s */
 uint64_t syscall_handler(uint64_t p1, uint64_t p2, uint64_t p3, uint64_t p4,
                          uint64_t p5, uint64_t sysnum)
 {
+   uint64_t val;
    switch(sysnum)
    {
       case __NR_write:
          return sys_write((int)p1, (char*)p2, (int)p3);
          break;
       case __NR_sched_yield:
-         return sys_yield(); 
+         schedule(); 
          break;
       case __NR_fork:
-         return fork(); 
+         val = fork();
+         if (cur_task->kstack[511] == 1234567)
+         {
+            cur_task->kstack[511] = 0;
+            return 0;
+         }
+         return val; 
          break;
       default:
          ERROR("Unknown syscall - %d\n",sysnum);

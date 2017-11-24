@@ -1,6 +1,4 @@
-#include <sys/kprintf.h>
-#include <sys/tarfs.h>
-#include <sys/elf64.h>
+#include <sys/os.h>
 
 /* return the length of a given string */
 int sbustrlen(char *str)
@@ -150,3 +148,4 @@ void init_tarfs()
       elf_load_file(filecontent, 0);
    } 
 }
+

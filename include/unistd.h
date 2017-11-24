@@ -31,7 +31,7 @@ int waitpid(int pid, int *status);
 pid_t getpid(void);
 pid_t getppid(void);
 
-void uyield();
+void yield();
 
 // OPTIONAL: implement for ``on-disk r/w file system (+10 pts)''
 #define SEEK_SET 0

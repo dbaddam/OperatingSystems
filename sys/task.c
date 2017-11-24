@@ -1,12 +1,18 @@
 #include <sys/os.h>
 
 task tasks[MAX_PROCESSES];
-uint64_t run_queue[MAX_PROCESSES+1];
-uint64_t spd_queue[MAX_PROCESSES+1];
-uint32_t run_head;
-uint32_t run_tail;
-uint32_t spd_head;
-uint32_t spd_tail;
+
+typedef struct 
+{
+   uint32_t head;
+   uint32_t tail;
+   uint64_t ele[MAX_PROCESSES+1];
+}queue;
+
+queue run_queue;
+queue spd_queue;
+queue exit_queue;
+
 //static task task1;
 //static task task2;
 //static task dummytask;
@@ -44,7 +50,7 @@ void user_main2()
    }
 }
 
-void create_kernel_task(task* t, void (*main)(), uint64_t flags)
+void create_kernel_task(task* t, void (*main)())
 {
    t->reg_r15 = 0;
    t->reg_r14 = 0;
@@ -55,19 +61,18 @@ void create_kernel_task(task* t, void (*main)(), uint64_t flags)
    t->reg_rbx = 0;
    t->reg_rip = (uint64_t) main;
    //t->reg_rflags = flags;
-   t->reg_cr3 = (uint64_t) kernel_pml4;
+   t->reg_cr3 = (uint64_t) PHYS_ADDR((uint64_t)kernel_pml4);
    t->state = RUNNABLE_STATE;
    t->mm_struct.start  = t->mm_struct.end = 0;
    bis(t->flags_task, KERNEL_TASK);
  
    t->kstack[510] = 0; 
-   t->next = cur_task->next;
-   cur_task->next =t;
+   //t->next = cur_task->next;
+   //cur_task->next =t;
 }
 
-void create_user_task(void (*main)(), uint64_t flags)
+uint64_t get_new_pid()
 {
-   task* t;
    int i;
    for (i = 0;i < MAX_PROCESSES;i++)
    {
@@ -78,23 +83,39 @@ void create_user_task(void (*main)(), uint64_t flags)
    if (i == MAX_PROCESSES)
       ERROR("Out of processes");
 
-   t = &tasks[i];
+   bis(tasks[i].flags_task, ALLOCATED_TASK);
+   return i;
+}
+
+void create_user_task(void (*main)())
+{
+   task* t;
+   uint64_t pid = get_new_pid();
+
+   t = &tasks[pid];
    cur_task = t;
-   bis(t->flags_task, ALLOCATED_TASK);
-   create_kernel_task(t, main, flags);
+
+   create_kernel_task(t, main);
    t->reg_cr3 = (uint64_t)init_user_pt();
    __asm__ __volatile__("movq %0, %%cr3"
                         :
                         : "r"(t->reg_cr3));
   
    uint64_t page = (uint64_t )_get_page(); 
-   t->ustack = (uint8_t*) USER_STACK_TOP;
-   t->reg_ursp = ((uint64_t)t->ustack)- 40;
+   //t->ustack = (uint8_t*) USER_STACK_TOP;
+   t->reg_ursp = ((uint64_t)USER_STACK_TOP)- 40;
    create_page_tables(USER_STACK_TOP - PAGE_SIZE, USER_STACK_TOP - 1,
                          PHYS_ADDR((uint64_t)page), (uint64_t*)VIRT_ADDR(t->reg_cr3),
                          PG_P|PG_RW|PG_U);
    add_vma(USER_STACK_TOP - PAGE_SIZE, PAGE_SIZE);
    bic(t->flags_task, KERNEL_TASK);
+}
+void idle()
+{
+   while(1)
+   {
+      schedule();
+   }
 }
 
 void start_sbush()
@@ -103,7 +124,7 @@ void start_sbush()
    task* t;
    uint64_t fsize;
 
-   create_user_task(NULL, 0);
+   create_user_task(NULL);
    t = cur_task;
    fsize = getFileFromTarfs("bin/simsh", &file_content);
    if (fsize != 0)
@@ -196,13 +217,77 @@ static void main2()
     cur_task 
 }*/
 
+
+void enqueue(queue* q, uint64_t num)
+{
+   q->ele[q->tail] = num;
+   q->tail = (q->tail + 1)%(MAX_PROCESSES+1);
+
+   if (q->head == q->tail)
+   {
+      ERROR("enqueue full - q - %p, head - %d, tail - %d\n",q, q->head, q->tail);
+   }
+}
+
+uint64_t dequeue(queue* q)
+{
+   if (q->head == q->tail)
+   {
+      ERROR("dequeue empty - q - %p, head - %d, tail - %d\n",q, q->head, q->tail);
+   }
+
+   uint64_t num = q->ele[q->head];
+   q->head = (q->head + 1)%(MAX_PROCESSES+1);
+
+   return num;
+}
+
+void add_run_queue(task* t)
+{
+   enqueue(&run_queue, t->pid);
+} 
+
+task* remove_run_queue()
+{
+   uint64_t num = dequeue(&run_queue);
+   return &tasks[num];
+}
+ 
+void add_spd_queue(task* t)
+{
+   enqueue(&spd_queue, t->pid);
+} 
+
+task* remove_spd_queue()
+{
+   uint64_t num = dequeue(&spd_queue);
+   return &tasks[num];
+}
+
+void add_exit_queue(task* t)
+{
+   enqueue(&exit_queue, t->pid);
+} 
+
+task* remove_exit_queue()
+{
+   uint64_t num = dequeue(&exit_queue);
+   return &tasks[num];
+}
+
 void init_task_system()
 {
    int i;
    for (i = 0;i < MAX_PROCESSES;i++)
        tasks[i].pid = i;
 
-   run_head = run_tail = spd_head = spd_tail = 0; 
+
+   uint64_t pid = get_new_pid();
+   task    *t   = &tasks[pid];
+
+   create_kernel_task(t, idle);
+   memcpy(t->name, "idle", 5);
+   add_run_queue(t);
    //void* rsp = _get_page();
    //cur_task = &maintask; 
    //cur_task->next = &maintask; 
@@ -211,8 +296,8 @@ void init_task_system()
    //create_kernel_task(&task1, main1, 0);
    //create_kernel_task(&task2, main2, 0);
 
-   cur_task = &tasks[0]; 
-   cur_task->next = cur_task;
+   //cur_task = &tasks[0]; 
+   //cur_task->next = cur_task;
    //create_user_task(user_main1, 0);
    //create_user_task(user_main2, 0);
 //   task1.next = &task2;
@@ -223,11 +308,33 @@ void init_task_system()
 
 
 int first_yield = 1;
-void yield()
+void schedule()
 {
-   task* me;
-   task dummy_task;
+   task* me = cur_task;
+   task* to;
+   //task dummy_task;
 
+   //kprintf("%d\n",first_yield++);
+   //sleep(1);
+   if (bit(cur_task->flags_task, KILL_TASK))
+   {
+      add_exit_queue(cur_task); 
+   }
+   else
+   {
+      add_run_queue(cur_task);
+   }
+
+   to = remove_run_queue();
+   cur_task = to;
+
+   if (cur_task->kstack[511] == 1234567) // HACK - To see if this is child process
+   {
+      cur_task->reg_rsp = (uint64_t) &cur_task->kstack[494];
+   }
+   set_tss_rsp((void*)&cur_task->kstack[505]);
+   switch_task(me, to);
+/*
    if (first_yield)
    {
       me = &dummy_task;
@@ -251,6 +358,7 @@ void yield()
    //   kprintf("Killing a task\n");
       // Free stack page
    //}
+*/
 }
 
 void copy_vmas(vma* dst, vma* src)
@@ -274,35 +382,27 @@ uint64_t fork()
 {
    task* volatile c;
    task* volatile p;
-   int   i;
-
-   for (i = 0;i < MAX_PROCESSES;i++)
-   {
-       if (!bit(tasks[i].flags_task, ALLOCATED_TASK))
-          break;
-   }
-
-   if (i == MAX_PROCESSES)
-      ERROR("Out of processes");
+   uint64_t volatile cpid = get_new_pid();
 
    p = cur_task; 
-   c = &tasks[i];
-   bis(c->flags_task, ALLOCATED_TASK);
+   c = &tasks[cpid];
 
    memcpy((char*)c, (char*)p, sizeof(task));
-   c->pid = i;
+   c->pid = cpid;
    c->ppid = p->pid;
    copy_vmas(&c->mm_struct, &p->mm_struct);
 
-   mem_info();
+   //mem_info();
    c->reg_cr3 = copy_page_tables(c, p);
+   c->kstack[511] = 1234567;
    flush_tlb(); 
-   // add to queues
+   
+   add_run_queue(c);
 
    save_child_state(p, c);
 
    if (cur_task->pid == p->pid)
       return c->pid;
-   else
-      return 0; 
+      
+   return 0; 
 }

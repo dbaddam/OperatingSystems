@@ -5,6 +5,7 @@
 
 #define MAX_PROCESSES 1024
 
+#define MAX_FILES 64
 
 struct _vma{
   uint64_t start;
@@ -12,6 +13,15 @@ struct _vma{
   struct _vma* next;
 };
 typedef struct _vma vma;
+
+struct _fd
+{
+   uint8_t  name[256];
+   uint64_t offset;
+#define ALLOCATED_FD 0x001
+   uint64_t flags;
+};
+typedef struct _fd fd;
 
 struct _task{
    /* It is very important that the registers stay at the top.
@@ -26,14 +36,13 @@ struct _task{
    uint64_t reg_rbx;   //48
    uint64_t reg_rip;   //56
    uint64_t reg_cr3;   /* We always store the PHYSICAL ADDRESS in this */
-   uint64_t reg_rflags;
-   uint64_t reg_ursp;
-   
-   vma       mm_struct;  /* This is a vma struct, the first entry is a dummy */
-   uint64_t  kstack[512];
-   uint8_t* ustack;    /* Once we have the ability to read elf64 and figure out where the
-                          stack is remove this*/
-   struct _task* next;
+   uint64_t reg_rflags;//72
+   uint64_t reg_ursp;  //80
+   uint64_t kstack[512]; //88
+  
+   char     name[256]; 
+   vma      mm_struct;  /* This is a vma struct, the first entry is a dummy */
+   fd       file[MAX_FILES];
    uint64_t state;
    uint64_t pid;
    uint64_t ppid;
@@ -51,7 +60,7 @@ task* cur_task;
 
 void create_task(task* t, void (*main)(), uint64_t flags, uint64_t* pml4);
 void init_task_system();
-void yield();
+void schedule();
 //void switch_task(task* old, task* new, task** last);
 void switch_task(task* old, task* new);
 void uswitch_task(task* old, task* new);

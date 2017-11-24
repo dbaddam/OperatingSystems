@@ -27,7 +27,6 @@ void isr_page_fault(uint64_t eno, uint64_t cr2)
    vma  *p = &t->mm_struct;
    vma  *lastp; 
 
-   kprintf("page_fault -%p\n",cr2);
    // Skip the dummy entry
    lastp = p;
    p = p->next;
@@ -56,7 +55,7 @@ void isr_page_fault(uint64_t eno, uint64_t cr2)
                 }
                 else
                 {
-                   kprintf("COW %p\n",vaddr);
+                   //kprintf("COW %p\n",vaddr);
                    uint64_t new_page = (uint64_t) _get_page();
                    memcpy((char*)new_page, (char*)old_page, PAGE_SIZE);
 

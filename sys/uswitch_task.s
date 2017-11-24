@@ -52,8 +52,14 @@ uswitch_task:
    rsi - child
 */
 save_child_state: 
-   movq (%rsp), %rax
+   movq 64(%rsp), %rax
    movq %rax, 56(%rsi) //Move this to child rip
+   #movq %rsp, %rax
+   #add  $64, %rax
+   #movq %rax, 40(%rsi) // Stack point for the child
+#   movq %rsp, %rax
+#   movq %rax, 40(%rsi) // Hack to make child and parent stack consistent
+#   movq %rbx, 48(%rsi)
    retq
 
 flush_tlb: 

@@ -7,7 +7,7 @@ void sleep(uint32_t secs)
    //while(1);
    while(secs--)
       for (i = 0;i < 10000;i++)
-         for (j = 0;j < 100000;j++); 
+         for (j = 0;j < 10000;j++); 
 }
 
 uint64_t min(uint64_t a, uint64_t b)

@@ -20,8 +20,10 @@ _syscall_entry:
    movq %rsp, %r14
    movq cur_task, %r15
    movq %rsp, 80(%r15)
-   movq 40(%r15), %rsp
+   add  $0x1020, %r15  /* point to kstack[505]*/
+   movq %r15, %rsp
 
+   pushq %r14
    pushq %rcx
    pushq %r8
    pushq %r9
@@ -43,6 +45,7 @@ _syscall_entry:
    popq %r9
    popq %r8
    popq %rcx
+   popq %r14
    movq %r14, %rsp
    #sti
    sysretq

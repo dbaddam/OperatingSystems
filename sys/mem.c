@@ -303,7 +303,6 @@ uint64_t copy_page_tables(task* child, task* parent)
    {
       if (parent_cr3[i] > 0)
       {
-         kprintf("Copying level - %d\n", i);
          uint64_t* newpdp = (uint64_t*) _get_page();
          uint64_t* pdp = (uint64_t*)VIRT_ADDR(CL12(parent_cr3[i]));
          clear_page(newpdp);
@@ -444,7 +443,7 @@ void create_page_table_entry(uint64_t logical_address,
                /*&&
                ((pt[pt_entry] & PG_RW) == PG_RW)*/)
             {
-               kprintf("COW update %p\n", logical_address);
+               //kprintf("COW update %p\n", logical_address);
                pt[pt_entry] = (uint64_t)physical_address;
                pt[pt_entry] |= flags;
             

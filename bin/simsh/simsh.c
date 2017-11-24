@@ -360,12 +360,34 @@ int main(int argc, char *argv[], char *envp[])
    if (fork() == 0)
    {
       write (1, "Child", 5);
+      yield();
+      write (1, "Child", 5);
+
+      if (fork() == 0)
+      {
+         write(1, "Child Child", 11);
+         yield();
+         write(1, "Child Child", 11);
+      }
+      else
+      {
+         write(1, "Child Parent", 12);
+         yield();
+         write(1, "Child Parent", 12);
+         yield();
+      }
    }
    else
    {
       write (1, "Parent", 6);
-      h[1] = ';';
-      write(1,h,2);
+      //h[1] = ';';
+      //write(1,h,2);
+      yield();
+      write(1, "After Parent", 12);
+      yield();
+      yield();
+      yield();
+      yield();
    }
    //rec(NULL);
    while(1);

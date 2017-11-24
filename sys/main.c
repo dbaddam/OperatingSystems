@@ -27,12 +27,15 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   start_sbush();
   //init_tarfs();  
 
+  kprintf("You should not be here\n");
   while(1);
+/*
   while (1)
   {
     kprintf("Idle task\n");
     yield();
   }
+*/
   //ahci();
   while(1);
 }
