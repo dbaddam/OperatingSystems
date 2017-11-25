@@ -5,6 +5,8 @@
 
 #define MAX_PROCESSES 1024
 
+#define MAX_FILE_NAME_SIZE 256
+
 #define MAX_FILES 64
 
 struct _vma{
@@ -16,7 +18,7 @@ typedef struct _vma vma;
 
 struct _fd
 {
-   uint8_t  name[256];
+   uint8_t  name[MAX_FILE_NAME_SIZE];
    uint64_t offset;
 #define ALLOCATED_FD 0x001
    uint64_t flags;
@@ -40,7 +42,7 @@ struct _task{
    uint64_t reg_ursp;  //80
    uint64_t kstack[512]; //88
   
-   char     name[256]; 
+   char     name[MAX_FILE_NAME_SIZE]; 
    vma      mm_struct;  /* This is a vma struct, the first entry is a dummy */
    fd       file[MAX_FILES];
 
@@ -52,13 +54,10 @@ struct _task{
 #define AVAIL_STATE   0x0010
 #define COOK_STATE    0x0020
 
-   uint32_t flags_task;
-#define KILL_TASK       0x0001
-#define KERNEL_TASK     0x0002
-#define ALLOCATED_TASK  0x0004
+   uint32_t exit_status;
 
-   uint64_t pid;
-   uint64_t ppid;
+   uint32_t pid;
+   uint32_t ppid;
 
 }__attribute__((__packed__));
 
@@ -79,5 +78,7 @@ void start_sbush();
 void add_vma(uint64_t start, uint64_t size);
 void save_child_state(task* p, task* c);
 uint64_t fork();
-uint64_t execve();
+uint64_t execve(char* filename, char* argv[], char* envp[]);
+void exit(uint32_t status);
+uint32_t wait(int *status);
 #endif

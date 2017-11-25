@@ -115,7 +115,11 @@ void get_pheaders(Elf64_Ehdr *hdr, uint64_t cr3)
       uint64_t seg_msize = (uint64_t)(phdr->p_memsz);
       uint64_t seg_vaddr = (uint64_t)(phdr->p_vaddr);
 
-      elf_copy_contents(seg_vaddr, seg_addr, seg_fsize, seg_msize,cr3); 
+      if (seg_msize > 0)
+      {
+         //TODOKISHAN add_vma();
+         elf_copy_contents(seg_vaddr, seg_addr, seg_fsize, seg_msize,cr3); 
+      }
       //kprintf("i=%d",i);
       //kprintf("segment start_addr=%p,fsz=%d,msz=%d,vaddr=%p\n",seg_addr,seg_fsize,seg_msize,seg_vaddr);  
    }

@@ -1,5 +1,8 @@
 #include <sys/os.h>
 
+#define TOP_PROCESS 1
+#define INVALID_PID 2048
+
 task tasks[MAX_PROCESSES];
 
 /*typedef struct 
@@ -20,7 +23,7 @@ queue exit_queue;
 */
 
 void kill_task();
-void create_user_task(void (*main)());
+void create_first_user_task(void (*main)());
 void create_kernel_task(task* t, void (*main)());
 
 uint64_t get_cur_cr3();
@@ -37,9 +40,12 @@ void add_exit_queue(task* t);
 task* remove_exit_queue();
 */
 void add_run_queue(task* t);
+void add_wait_queue(task* t);
+void add_avail_queue(task* t);
 
 void init_task_system();
 void idle();
+void wait_forever();
 void start_sbush();
 
 void copy_vmas(vma* dst, vma* src);
@@ -47,8 +53,7 @@ void add_vma(uint64_t start, uint64_t size);
 void free_vmas(task* t);
 
 void schedule();
-uint64_t fork();
-uint64_t execve(char* filename, char* argv[], char* envp[]);
+void mark_children_zombie(uint32_t pid);
 
 void create_kernel_task(task* t, void (*main)())
 {
@@ -64,7 +69,6 @@ void create_kernel_task(task* t, void (*main)())
    t->reg_cr3 = (uint64_t) PHYS_ADDR((uint64_t)kernel_pml4);
    t->state = RUNNING_STATE;
    t->mm_struct.start  = t->mm_struct.end = 0;
-   bis(t->flags_task, KERNEL_TASK);
  
    t->kstack[510] = 0; 
    //t->next = cur_task->next;
@@ -84,17 +88,17 @@ uint64_t get_new_pid()
    if (i == MAX_PROCESSES)
       ERROR("Out of processes");
 
-   bis(tasks[i].flags_task, ALLOCATED_TASK);
    return i;
 }
 
-void create_user_task(void (*main)())
+void create_first_user_task(void (*main)())
 {
    task* t;
    uint64_t pid = get_new_pid();
 
    t = &tasks[pid];
    cur_task = t;
+   t->ppid = TOP_PROCESS;
 
    create_kernel_task(t, main);
    t->reg_cr3 = (uint64_t)init_user_pt();
@@ -109,7 +113,6 @@ void create_user_task(void (*main)())
                          PHYS_ADDR((uint64_t)page), (uint64_t*)VIRT_ADDR(t->reg_cr3),
                          PG_P|PG_RW|PG_U);
    add_vma(USER_STACK_TOP - PAGE_SIZE, PAGE_SIZE);
-   bic(t->flags_task, KERNEL_TASK);
 }
 
 // Idle thread
@@ -118,6 +121,16 @@ void idle()
    while(1)
    {
       schedule();
+   }
+}
+
+// Wait forever
+void wait_forever()
+{
+   int status;
+   while(1)
+   {
+      wait(&status);
    }
 }
 
@@ -154,7 +167,7 @@ void load_process(char* filename)
 void start_sbush()
 {
    mem_info();
-   create_user_task(NULL);
+   create_first_user_task(NULL);
    kprintf("Starting sbush....\n");
    load_process("bin/simsh");
 }
@@ -185,12 +198,6 @@ uint64_t get_cur_cr3()
    return cur_task->reg_cr3;
 }
 
-void kill_task()
-{
-   kprintf("Inside kill task\n");
-   while(1);
-   bis(cur_task->flags_task, KILL_TASK); 
-}
 /*
 void enqueue(queue* q, uint64_t num)
 {
@@ -257,6 +264,16 @@ void add_run_queue(task* t)
    t->state = RUNNING_STATE;
 }
  
+void add_wait_queue(task* t)
+{
+   t->state = WAITING_STATE;
+}
+
+void add_avail_queue(task* t)
+{
+   t->state = AVAIL_STATE;
+}
+
 task* next_running_task()
 {
    uint32_t cur = run_head;
@@ -294,11 +311,21 @@ void init_task_system()
    }
 
 
-   uint64_t pid = get_new_pid();
-   task    *t   = &tasks[pid];
+   uint64_t pid;
+   task    *t;
 
+   /* Add idle task */
+   pid = get_new_pid();
+   t = &tasks[pid];
    create_kernel_task(t, idle);
-   memcpy(t->name, "idle", 5);
+   strncpy(t->name, "idle", MAX_FILE_NAME_SIZE);
+   add_run_queue(t);
+
+   /* Add forever wait task */
+   pid = get_new_pid();
+   t = &tasks[pid];
+   create_kernel_task(t, wait_forever);
+   strncpy(t->name, "wait_forever", MAX_FILE_NAME_SIZE);
    add_run_queue(t);
 }
 
@@ -397,4 +424,78 @@ uint64_t fork()
       return c->pid;
       
    return 0; 
+}
+
+void destroy_process(task* t)
+{
+   destroy_address_space(t);
+   free_vmas(t);
+   _free_page((void*)VIRT_ADDR(t->reg_cr3));
+   add_avail_queue(t);
+}
+
+void mark_children_zombie(uint32_t pid)
+{
+   int i;
+
+   for (i = 0;i < MAX_PROCESSES;i++)
+   {
+       if (tasks[i].state != AVAIL_STATE &&
+           tasks[i].ppid == pid)
+       {
+          tasks[i].state = ZOMBIE_STATE;
+          tasks[i].pid = TOP_PROCESS;
+          mark_children_zombie(i);
+       }
+   }
+     
+   // Does this make sense here?
+   add_run_queue(&tasks[TOP_PROCESS]); 
+}
+
+void exit(uint32_t status)
+{
+   task* t = cur_task;
+
+   t->state = ZOMBIE_STATE;
+   t->exit_status = status;
+   mark_children_zombie(t->pid);
+
+   if (tasks[t->ppid].state == WAITING_STATE)
+      add_run_queue(&tasks[t->ppid]);
+
+   schedule();
+}
+
+uint32_t wait(int32_t *status)
+{
+   task* t = cur_task;
+   uint32_t i;
+
+   for (i = 0;i < MAX_PROCESSES;i++)
+   {
+      if (tasks[i].ppid == t->pid &&
+          tasks[i].state == ZOMBIE_STATE)
+      {
+         *status = tasks[i].exit_status;
+         destroy_process(&tasks[i]);
+         return i;
+      }
+   }
+
+   add_wait_queue(cur_task);
+   schedule();
+
+   for (i = 0;i < MAX_PROCESSES;i++)
+   {
+      if (tasks[i].ppid == t->pid &&
+          tasks[i].state == ZOMBIE_STATE)
+      {
+         *status = tasks[i].exit_status;
+         destroy_process(&tasks[i]);
+         return i;
+      }
+   }
+
+   return INVALID_PID;
 }

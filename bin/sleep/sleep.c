@@ -349,8 +349,9 @@ void rec(long* b)
 
 int main(int argc, char *argv[], char *envp[])
 {
-   char* buf = "Hello World";
+   char* buf = "Inside sleep";
    write(1, buf, sbustrlen(buf));
+   exit(1);
    char h[10];
    h[0] = ':';
    h[1] = ')';
@@ -384,7 +385,6 @@ int main(int argc, char *argv[], char *envp[])
       write (1, "Parent", 6);
       wait(&status);
       write (1, "P A wait", 8);
-      while(1);
       //h[1] = ';';
       //write(1,h,2);
       yield();
@@ -395,5 +395,6 @@ int main(int argc, char *argv[], char *envp[])
       yield();
    }
    //rec(NULL);
+   while(1);
    return 0;
 }

@@ -26,6 +26,23 @@ void memcpy(char* dest, char* src, uint64_t bytes){
    }
 }
 
+uint32_t strlen(char *str)
+{
+   char *c = str;
+   uint32_t   len = 0;
+
+   if (!str)
+      return -1;
+
+   while (*c != '\0')
+   {
+      c++;
+      len++;
+   }
+
+   return len;
+}
+
 void strncpy(char* dest, char* src, uint32_t len)
 {
    int i;
