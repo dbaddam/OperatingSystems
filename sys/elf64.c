@@ -104,7 +104,7 @@ void get_pheaders(Elf64_Ehdr *hdr, uint64_t cr3)
     
    //start program header pointer
    Elf64_Phdr *pheaders = (Elf64_Phdr *)((uint64_t)hdr + hdr->e_phoff); 
-   kprintf("phtEntries = %d\n",phtEntries);
+   //kprintf("phtEntries = %d\n",phtEntries);
    int i=0;
    cur_task->reg_rip = (uint64_t)hdr->e_entry;
    for(i=0;i<phtEntries;i++)
@@ -116,8 +116,8 @@ void get_pheaders(Elf64_Ehdr *hdr, uint64_t cr3)
       uint64_t seg_vaddr = (uint64_t)(phdr->p_vaddr);
 
       elf_copy_contents(seg_vaddr, seg_addr, seg_fsize, seg_msize,cr3); 
-      kprintf("i=%d",i);
-      kprintf("segment start_addr=%p,fsz=%d,msz=%d,vaddr=%p\n",seg_addr,seg_fsize,seg_msize,seg_vaddr);  
+      //kprintf("i=%d",i);
+      //kprintf("segment start_addr=%p,fsz=%d,msz=%d,vaddr=%p\n",seg_addr,seg_fsize,seg_msize,seg_vaddr);  
    }
    return;
 }

@@ -3,7 +3,7 @@
 
 #include <sys/defs.h>
 
-#define __NR_read                               0ul                                                           
+#define __NR_read                               0ul
 #define __NR_write                              1ul                                                           
 #define __NR_open                               2ul                                                           
 #define __NR_close                              3ul                                                           

@@ -2,53 +2,53 @@
 
 task tasks[MAX_PROCESSES];
 
-typedef struct 
+/*typedef struct 
 {
    uint32_t head;
    uint32_t tail;
    uint64_t ele[MAX_PROCESSES+1];
 }queue;
+*/
 
+
+uint32_t run_head;
+
+/*
 queue run_queue;
 queue spd_queue;
 queue exit_queue;
-
-//static task task1;
-//static task task2;
-//static task dummytask;
-//static task maintask;
-//static task usertask;
-
-
-//static task task[MAX_PROCESSES];
-
-//static task* queue;
+*/
 
 void kill_task();
+void create_user_task(void (*main)());
+void create_kernel_task(task* t, void (*main)());
 
-void user_main1()
-{
-   while (1){
-   //char* buf = "Sending message from userland1";
-   kprintf("Hello user\n");
-   //write(1, buf, sizeof(buf));
-   //__asm__ __volatile__("syscall\n\t"::);
-   while(1);
-   //uyield();
-   }
-}
+uint64_t get_cur_cr3();
+uint64_t get_new_pid();
 
-void user_main2()
-{
-   while (1){
-   //char* buf = "Sending message from userland2";
-   kprintf("Hello user\n");
-   //write(1, buf, sizeof(buf));
-   //__asm__ __volatile__("syscall\n\t"::);
-   while(1);
-   //uyield();
-   }
-}
+/*
+void enqueue(queue* q, uint64_t num);
+uint64_t dequeue(queue* q);
+void add_run_queue(task* t);
+task* remove_run_queue();
+void add_spd_queue(task* t);
+task* remove_spd_queue();
+void add_exit_queue(task* t);
+task* remove_exit_queue();
+*/
+void add_run_queue(task* t);
+
+void init_task_system();
+void idle();
+void start_sbush();
+
+void copy_vmas(vma* dst, vma* src);
+void add_vma(uint64_t start, uint64_t size);
+void free_vmas(task* t);
+
+void schedule();
+uint64_t fork();
+uint64_t execve(char* filename, char* argv[], char* envp[]);
 
 void create_kernel_task(task* t, void (*main)())
 {
@@ -62,7 +62,7 @@ void create_kernel_task(task* t, void (*main)())
    t->reg_rip = (uint64_t) main;
    //t->reg_rflags = flags;
    t->reg_cr3 = (uint64_t) PHYS_ADDR((uint64_t)kernel_pml4);
-   t->state = RUNNABLE_STATE;
+   t->state = RUNNING_STATE;
    t->mm_struct.start  = t->mm_struct.end = 0;
    bis(t->flags_task, KERNEL_TASK);
  
@@ -76,10 +76,11 @@ uint64_t get_new_pid()
    int i;
    for (i = 0;i < MAX_PROCESSES;i++)
    {
-       if (!bit(tasks[i].flags_task, ALLOCATED_TASK))
+       if (tasks[i].state == AVAIL_STATE)
           break;
    }
 
+   tasks[i].state = COOK_STATE;
    if (i == MAX_PROCESSES)
       ERROR("Out of processes");
 
@@ -110,6 +111,8 @@ void create_user_task(void (*main)())
    add_vma(USER_STACK_TOP - PAGE_SIZE, PAGE_SIZE);
    bic(t->flags_task, KERNEL_TASK);
 }
+
+// Idle thread
 void idle()
 {
    while(1)
@@ -118,18 +121,16 @@ void idle()
    }
 }
 
-void start_sbush()
+void load_process(char* filename)
 {
    char* file_content;
    task* t;
    uint64_t fsize;
 
-   create_user_task(NULL);
    t = cur_task;
-   fsize = getFileFromTarfs("bin/simsh", &file_content);
-   if (fsize != 0)
+   fsize = getFileFromTarfs(filename, &file_content);
+   if (fsize > 0)
    {
-      kprintf("Starting sbush....\n");
       elf_load_file(file_content, t->reg_cr3);
    }
 
@@ -146,23 +147,37 @@ void start_sbush()
                          : 
                          : "g"(t->reg_ursp), "g"(t->reg_rip)
                          : "rax", "memory");
+   
 }
 
-// add_vma inserts in a sorted order
-void add_vma(uint64_t start, uint64_t size)
+// Spawns the initial shell
+void start_sbush()
 {
-   task *t = cur_task;
-   vma  *p = &t->mm_struct;
-   vma  *c;
+   mem_info();
+   create_user_task(NULL);
+   kprintf("Starting sbush....\n");
+   load_process("bin/simsh");
+}
 
-   while (p->next != NULL && p->next->start < start)
-      p = p->next;
-  
-   c = (vma*)kmalloc(sizeof(vma));
-   c->start = start;
-   c->end = start+size;
-   c->next = p->next;
-   p->next = c; 
+uint64_t execve(char* filename, char* argv[], char* envp[])
+{
+   char fname[256];
+
+   mem_info();
+   strncpy(fname, filename, 256); 
+   destroy_address_space(cur_task);
+   free_vmas(cur_task);
+   flush_tlb();
+   mem_info();
+   uint64_t page = (uint64_t )_get_page(); 
+   cur_task->reg_ursp = ((uint64_t)USER_STACK_TOP)- 40;
+   create_page_tables(USER_STACK_TOP - PAGE_SIZE, USER_STACK_TOP - 1,
+                         PHYS_ADDR((uint64_t)page), (uint64_t*)VIRT_ADDR(cur_task->reg_cr3),
+                         PG_P|PG_RW|PG_U);
+   add_vma(USER_STACK_TOP - PAGE_SIZE, PAGE_SIZE);
+   load_process(fname);
+
+   return 0;
 }
 
 uint64_t get_cur_cr3()
@@ -177,47 +192,6 @@ void kill_task()
    bis(cur_task->flags_task, KILL_TASK); 
 }
 /*
-static void main1()
-{
-   int x1,x2,x3,x4,x5,x6;
-   kprintf("Inside main1\n");
-
-   x1 = 1;
-   x2 = 2;
-   x3 = 3;
-   x4 = 4;
-   x5 = 5;
-   x6 = 6;
-   while(1){
-   x1++;
-   x2++;
-   x3++;
-   x4++;
-   x5++;
-   x6++;
-   yield();
-   kprintf("Inside main1 - %d,%d,%d,%d,%d,%d\n",x1,x2,x3,x4,x5,x6);
-   sleep(5);
-   }
-   //while(1);
-}
-
-static void main2()
-{
-   while(1){
-   kprintf("Inside main2\n");
-   yield();
-   kprintf("Inside main2 - After yield()\n");
-   sleep(5);
-   }
-}
-*/
-/*task* next_task()
-{
-    cur_task 
-}*/
-
-
 void enqueue(queue* q, uint64_t num)
 {
    q->ele[q->tail] = num;
@@ -244,6 +218,7 @@ uint64_t dequeue(queue* q)
 
 void add_run_queue(task* t)
 {
+   t->state = RUNNING_STATE;
    enqueue(&run_queue, t->pid);
 } 
 
@@ -275,11 +250,48 @@ task* remove_exit_queue()
    return &tasks[num];
 }
 
+*/
+
+void add_run_queue(task* t)
+{
+   t->state = RUNNING_STATE;
+}
+ 
+task* next_running_task()
+{
+   uint32_t cur = run_head;
+
+   for (run_head = cur;run_head < MAX_PROCESSES;run_head++)
+   {
+       if (tasks[run_head].state == RUNNING_STATE)
+       {
+          uint32_t temp = run_head;
+          run_head = (run_head + 1)%MAX_PROCESSES;
+          return &tasks[temp]; 
+       }
+   }
+
+   for (run_head = 0;run_head < cur;run_head++)
+   {
+       if (tasks[run_head].state == RUNNING_STATE)
+       {
+          uint32_t temp = run_head;
+          run_head = (run_head + 1)%MAX_PROCESSES;
+          return &tasks[temp]; 
+       }
+   }
+
+   ERROR("No running tasks..Should not be here");
+}
+
 void init_task_system()
 {
    int i;
    for (i = 0;i < MAX_PROCESSES;i++)
+   {
        tasks[i].pid = i;
+       tasks[i].state = AVAIL_STATE;
+   }
 
 
    uint64_t pid = get_new_pid();
@@ -288,77 +300,26 @@ void init_task_system()
    create_kernel_task(t, idle);
    memcpy(t->name, "idle", 5);
    add_run_queue(t);
-   //void* rsp = _get_page();
-   //cur_task = &maintask; 
-   //cur_task->next = &maintask; 
-   //create_kernel_task(&maintask, 0, 0);
-
-   //create_kernel_task(&task1, main1, 0);
-   //create_kernel_task(&task2, main2, 0);
-
-   //cur_task = &tasks[0]; 
-   //cur_task->next = cur_task;
-   //create_user_task(user_main1, 0);
-   //create_user_task(user_main2, 0);
-//   task1.next = &task2;
-//   task2.next = &task1;
-//   dummytask.next = &task1;
-//   cur_task = &dummytask;
 }
 
 
-int first_yield = 1;
 void schedule()
 {
    task* me = cur_task;
    task* to;
-   //task dummy_task;
 
-   //kprintf("%d\n",first_yield++);
    //sleep(1);
-   if (bit(cur_task->flags_task, KILL_TASK))
-   {
-      add_exit_queue(cur_task); 
-   }
-   else
-   {
-      add_run_queue(cur_task);
-   }
 
-   to = remove_run_queue();
+   to = next_running_task();
    cur_task = to;
 
+   kprintf("Scheduling task %d\n", (int)to->pid);
    if (cur_task->kstack[511] == 1234567) // HACK - To see if this is child process
    {
       cur_task->reg_rsp = (uint64_t) &cur_task->kstack[494];
    }
    set_tss_rsp((void*)&cur_task->kstack[505]);
    switch_task(me, to);
-/*
-   if (first_yield)
-   {
-      me = &dummy_task;
-      cur_task = &tasks[0];
-      first_yield = 0;
-   }
-   else
-   {
-      me = cur_task;
-      cur_task = cur_task->next;
-   }
-   //task* last;
-   //switch_task(me, cur_task, &last);
-
-   set_tss_rsp((void*)cur_task->reg_rsp);
-   if (cur_task->kstack[510] != 0)
-      switch_task(me, cur_task);
-   else
-      uswitch_task(me, cur_task);
-   //if (bit(last->flags_task, KILL_TASK)){
-   //   kprintf("Killing a task\n");
-      // Free stack page
-   //}
-*/
 }
 
 void copy_vmas(vma* dst, vma* src)
@@ -377,6 +338,37 @@ void copy_vmas(vma* dst, vma* src)
 
    d_c->next = NULL;
 }
+
+// add_vma inserts in a sorted order
+void add_vma(uint64_t start, uint64_t size)
+{
+   task *t = cur_task;
+   vma  *p = &t->mm_struct;
+   vma  *c;
+
+   while (p->next != NULL && p->next->start < start)
+      p = p->next;
+  
+   c = (vma*)_get_page();
+   c->start = start;
+   c->end = start+size;
+   c->next = p->next;
+   p->next = c; 
+}
+
+void free_vmas(task* t)
+{
+   vma  *p = &t->mm_struct;
+   vma  *c;
+
+   while (p->next != NULL)
+   {
+      c = p->next;
+      p->next = p->next->next;
+      _free_page(c);
+   }
+}
+
 
 uint64_t fork()
 {

@@ -5,7 +5,8 @@
 #include <sys/task.h>
 
 #define PAGE_SIZE (1 << 12)
-#define KERNEL_BASE (0xffffffff80000000)
+#define KERNEL_BASE    (0xffffffff80000000)
+#define MAX_RAM        (1ULL << 31)
 
 #define USER_STACK_TOP (0xffffff0000000000)
 
@@ -25,8 +26,8 @@
 struct mem_pd{
 #define INVALID_MEM_PD    0x00000001
 #define USED_MEM_PD       0x00000002
-   uint32_t flags;
-   uint32_t pid;
+#define BLOCKED_MEM_PD    0x00000004
+   uint64_t flags;
    uint64_t ref_count;
    struct mem_pd* next;
 }__attribute__((__packed__));
@@ -48,6 +49,7 @@ void create_page_tables(uint64_t start_logical_address,
                         uint16_t flags);
 
 uint64_t copy_page_tables(task* child, task* parent);
+void destroy_address_space(task* t);
 uint32_t trans_vaddr_pt(uint64_t vaddr, uint64_t* pt);
 uint64_t get_pd_ref(uint64_t vaddr);
 void incr_pd_ref(uint64_t vaddr);

@@ -108,6 +108,9 @@ uint64_t syscall_handler(uint64_t p1, uint64_t p2, uint64_t p3, uint64_t p4,
          }
          return val; 
          break;
+      case __NR_execve:
+         execve(); 
+         break;
       default:
          ERROR("Unknown syscall - %d\n",sysnum);
    }

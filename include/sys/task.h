@@ -11,7 +11,7 @@ struct _vma{
   uint64_t start;
   uint64_t end;
   struct _vma* next;
-};
+}__attribute__((__packed__));
 typedef struct _vma vma;
 
 struct _fd
@@ -20,7 +20,7 @@ struct _fd
    uint64_t offset;
 #define ALLOCATED_FD 0x001
    uint64_t flags;
-};
+}__attribute__((__packed__));
 typedef struct _fd fd;
 
 struct _task{
@@ -43,15 +43,24 @@ struct _task{
    char     name[256]; 
    vma      mm_struct;  /* This is a vma struct, the first entry is a dummy */
    fd       file[MAX_FILES];
-   uint64_t state;
-   uint64_t pid;
-   uint64_t ppid;
-#define RUNNABLE_STATE 0x0001
-   uint64_t flags_task;
+
+   uint32_t state;
+#define RUNNING_STATE 0x0001
+#define WAITING_STATE 0x0002
+#define SUSPEND_STATE 0x0004
+#define ZOMBIE_STATE  0x0008
+#define AVAIL_STATE   0x0010
+#define COOK_STATE    0x0020
+
+   uint32_t flags_task;
 #define KILL_TASK       0x0001
 #define KERNEL_TASK     0x0002
 #define ALLOCATED_TASK  0x0004
-};
+
+   uint64_t pid;
+   uint64_t ppid;
+
+}__attribute__((__packed__));
 
 typedef struct _task task;
 
@@ -70,4 +79,5 @@ void start_sbush();
 void add_vma(uint64_t start, uint64_t size);
 void save_child_state(task* p, task* c);
 uint64_t fork();
+uint64_t execve();
 #endif

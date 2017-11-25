@@ -37,6 +37,15 @@ void init_mem(uint32_t *modulep, void* kernmem, void *physbase, void *physfree){
     if (smap->type == 1 /* memory */ && smap->length != 0) {
       kprintf("Available Physical Memory [%p-%p]\n", smap->base, smap->base + smap->length);
 
+      if (smap->base < MAX_RAM && smap->base + smap->length >= MAX_RAM)
+      {
+          last_access_mem = MAX_RAM - 1;
+          break;
+      }
+
+      if (smap->base >= MAX_RAM)
+         break;
+
       if (smap->base + smap->length > last_access_mem)
          last_access_mem = smap->base + smap->length;
    
@@ -108,8 +117,7 @@ void init_mem(uint32_t *modulep, void* kernmem, void *physbase, void *physfree){
 
   for (i = 0;i < kernel_pages;i++)
   {
-      start_pd[i].pid = 0;
-      start_pd[i].flags = USED_MEM_PD;
+      start_pd[i].flags = USED_MEM_PD | BLOCKED_MEM_PD;
   }
 
   head_freepd = start_pd[kernel_pages-1].next;
@@ -217,7 +225,7 @@ void _free_page(void* ptr)
    if (!bit (start_pd[index].flags, USED_MEM_PD))
       ERROR("Memory never allocated - %p\n", ptr);
 
-   if (start_pd[index].pid == 0)
+   if (bit (start_pd[index].flags, BLOCKED_MEM_PD))
       ERROR("Memory not supposed to be deleted - %p\n", ptr);
 
    start_pd[index].ref_count--;
@@ -290,6 +298,49 @@ void clear_page(void* ptr)
    uint64_t* p = (uint64_t*)ptr;
    for (i = 0;i < PAGE_SIZE/8;i++,p++)
        *p = 0;
+}
+
+void destroy_address_space(task* t)
+{
+   
+   uint64_t* cr3 = (uint64_t*) VIRT_ADDR(t->reg_cr3);
+   int i,j,k,l;
+
+   for (i = 0;i < 511;i++)
+   {
+      if (bit(cr3[i], PG_P))
+      {
+         uint64_t* pdp = (uint64_t*)VIRT_ADDR(CL12(cr3[i]));
+
+         for (j = 0;j < 512;j++)
+         {
+             if (bit(pdp[j], PG_P) > 0)
+             {
+                uint64_t* pd = (uint64_t*) VIRT_ADDR(CL12(pdp[j]));
+
+                for (k = 0;k < 512;k++)
+                {
+                    if (bit(pd[k],PG_P) > 0)
+                    {
+                       uint64_t* pt = (uint64_t*) VIRT_ADDR(CL12(pd[k]));
+
+                       for (l = 0;l < 512;l++)
+                       {
+                          if (bit(pt[l], PG_P))
+                          {
+                             _free_page((void*)VIRT_ADDR(CL12(pt[l])));
+                          }
+                       }
+                       _free_page((void*)pt);
+                    }
+                }
+                _free_page((void*)pd);
+             } 
+         } 
+         _free_page((void*)pdp);
+      }
+      cr3[i] = 0; 
+   }
 }
 
 uint64_t copy_page_tables(task* child, task* parent)
@@ -509,7 +560,16 @@ void create_page_table_entry(uint64_t logical_address,
 
 void mem_info()
 {
-  kprintf("head_freepd - %p\n", head_freepd);
-  kprintf("head_freepd index - %d\n", (head_freepd-start_pd));
-  kprintf("Next page physaddr - %p\n", (head_freepd-start_pd)*PAGE_SIZE);
+   uint64_t i;
+   uint64_t cnt = 0;
+
+   for (i = 0;i < last_physaddr;i += PAGE_SIZE)
+   {
+       if (bit(start_pd[i/PAGE_SIZE].flags, USED_MEM_PD))
+          cnt++;
+   } 
+   //kprintf("head_freepd - %p\n", head_freepd);
+   //kprintf("head_freepd index - %d\n", (head_freepd-start_pd));
+   //kprintf("Next page physaddr - %p\n", (head_freepd-start_pd)*PAGE_SIZE);
+   kprintf("Used pages - %d\n", (int)cnt);
 }

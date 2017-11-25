@@ -363,7 +363,8 @@ int main(int argc, char *argv[], char *envp[])
       yield();
       write (1, "Child", 5);
 
-      if (fork() == 0)
+      execve("bin/simsh", NULL, NULL);
+   /*   if (fork() == 0)
       {
          write(1, "Child Child", 11);
          yield();
@@ -375,7 +376,7 @@ int main(int argc, char *argv[], char *envp[])
          yield();
          write(1, "Child Parent", 12);
          yield();
-      }
+      }*/
    }
    else
    {

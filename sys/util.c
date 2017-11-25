@@ -25,3 +25,18 @@ void memcpy(char* dest, char* src, uint64_t bytes){
      src++;
    }
 }
+
+void strncpy(char* dest, char* src, uint32_t len)
+{
+   int i;
+  
+   for (i = 0;i < len && *src;i++)
+   {
+      *(dest+i) = *(src + i);
+   }
+
+   if (i != len)
+   {
+      *(dest + i) = '\0';
+   }
+}
