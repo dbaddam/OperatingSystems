@@ -25,7 +25,8 @@ void wait_forever();
 void start_sbush();
 
 void copy_vmas(vma* dst, vma* src);
-void add_vma(uint64_t start, uint64_t size);
+void add_vma(uint64_t start, uint64_t size, uint64_t fstart, 
+             uint64_t fsize, uint64_t msize, uint64_t anon);
 void free_vmas(task* t);
 
 void schedule();
@@ -260,7 +261,7 @@ uint64_t execve(char* filename, char* argv[], char* envp[])
    create_page_tables(USER_STACK_TOP - PAGE_SIZE, USER_STACK_TOP - 1,
                          PHYS_ADDR((uint64_t)page), (uint64_t*)VIRT_ADDR(cur_task->reg_cr3),
                          PG_P|PG_RW|PG_U);
-   add_vma(USER_STACK_TOP - PAGE_SIZE, PAGE_SIZE);
+   add_vma_anon(USER_STACK_TOP - PAGE_SIZE, PAGE_SIZE);
    load_process(fname);
 
    return 0;
@@ -379,7 +380,8 @@ void copy_vmas(vma* dst, vma* src)
 }
 
 // add_vma inserts in a sorted order
-void add_vma(uint64_t start, uint64_t size)
+void add_vma_int(uint64_t start, uint64_t size, uint64_t fstart, 
+                 uint64_t fsize, uint64_t msize, uint64_t anon)
 {
    task *t = cur_task;
    vma  *p = &t->mm_struct;
@@ -389,10 +391,26 @@ void add_vma(uint64_t start, uint64_t size)
       p = p->next;
   
    c = (vma*)_get_page();
-   c->start = start;
-   c->end = start+size;
-   c->next = p->next;
-   p->next = c; 
+   c->start  = start;
+   c->end    = start+size;
+   c->anon   = anon;
+   c->node.fstart = fstart;
+   c->node.fsize  = fsize;
+   c->node.msize  = msize;
+
+   c->next   = p->next;
+   p->next   = c; 
+}
+
+void add_vma_anon(uint64_t start, uint64_t size)
+{
+   add_vma_int(start, size, 0, 0, 0, 1);
+}
+
+void add_vma_file(uint64_t vaddr, uint64_t fstart, 
+                  uint64_t fsize, uint64_t msize)
+{
+   add_vma_int(vaddr, msize, fstart, fsize, msize, 0);
 }
 
 void free_vmas(task* t)

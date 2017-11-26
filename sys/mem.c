@@ -7,9 +7,6 @@ void create_page_table_entry(uint64_t logical_address,
                              uint64_t* pml4,
                              uint16_t flags);
 
-/*  TODOKISHAN - get_free_page should return virtual address which
- *  would cascade a set of changes in the way page entries are filled.
-*/
 mem_pd* start_pd;
 mem_pd* head_freepd;
 uint64_t last_physaddr;
@@ -135,10 +132,8 @@ void init_mem(uint32_t *modulep, void* kernmem, void *physbase, void *physfree){
   clear_page(pml4);
 
   create_page_tables(KERNEL_BASE, 
-                     /* TODOKISHAN - We have to better this. At this point, a new page
-                        table created after the following address will fail */
                      KERNEL_BASE + last_physaddr - 1,
-//                     KERNEL_BASE + (1 << 30) - 1,
+                     //KERNEL_BASE + (1 << 30) - 1,
                      //KERNEL_BASE + (kernel_pages*PAGE_SIZE) + (100*PAGE_SIZE) - 1,
                      0, pml4, PG_U|PG_P|PG_RW);
   kprintf("Done creating page tables\n");

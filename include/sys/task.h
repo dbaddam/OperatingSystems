@@ -9,9 +9,19 @@
 
 #define MAX_FILES 64
 
+struct _inode{
+   uint64_t fstart;
+   uint64_t fsize;
+   uint64_t msize;
+}__attribute__((__packed__));
+
+typedef struct _inode inode;
+
 struct _vma{
-  uint64_t start;
+  uint64_t start;    // This might not be page-aligned BEWARE
   uint64_t end;
+  inode    node;
+  uint64_t anon;
   struct _vma* next;
 }__attribute__((__packed__));
 typedef struct _vma vma;
@@ -75,7 +85,9 @@ void uswitch_task(task* old, task* new);
 void user_main();
 uint64_t get_cur_cr3();
 void start_sbush();
-void add_vma(uint64_t start, uint64_t size);
+void add_vma_anon(uint64_t start, uint64_t size);
+void add_vma_file(uint64_t vaddr, uint64_t fstart, 
+                  uint64_t fsize, uint64_t msize);
 void save_child_state(task* p, task* c);
 uint64_t fork();
 uint64_t execve(char* filename, char* argv[], char* envp[]);

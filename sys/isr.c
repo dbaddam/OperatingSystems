@@ -26,7 +26,7 @@ void isr_page_fault(uint64_t eno, uint64_t cr2)
    task *t = cur_task;
    vma  *p = &t->mm_struct;
    vma  *lastp; 
-
+   int   i;
    // Skip the dummy entry
    lastp = p;
    p = p->next;
@@ -34,10 +34,10 @@ void isr_page_fault(uint64_t eno, uint64_t cr2)
    {
       if (cr2 >= p->start && cr2 < p->end)
       {
+         uint64_t vaddr = cr2;
          if (eno == 7) // Present | USER |WRITE
          {
             uint64_t pte;
-            uint64_t vaddr = cr2;
             if (trans_vaddr_pt(vaddr, &pte) &&
                 bit(pte, PG_COW))              // COW
             {
@@ -68,13 +68,51 @@ void isr_page_fault(uint64_t eno, uint64_t cr2)
                            PG_P|PG_U|PG_RW);
                    decr_pd_ref(old_page);
                 }
-                flush_tlb();
             }
             else
             {
                 ERROR("isr_page_fault eno - %p, cr2 - %p\n");
             }
          }
+         else
+         {
+            if (!p->anon)
+            {
+                /* All the following complicated code is because elf64 sections
+                 * need not be page aligned and fsize is different from msize */
+
+                //kprintf("Instruction fetch,");
+                uint64_t new_page = (uint64_t) _get_page();
+                char* cur_start_vaddr = (char*) ADDR_FLOOR(vaddr);
+                char* content = (char*)p->node.fstart;      // Content starts here
+                int   j   =(int)(((uint64_t)cur_start_vaddr) - (p->start));
+
+                /* Add the new page to page tables */
+                create_page_tables(ADDR_FLOOR(vaddr), 
+                        ADDR_FLOOR(vaddr) + PAGE_SIZE -1,
+                        PHYS_ADDR(new_page),
+                        (uint64_t*)VIRT_ADDR((uint64_t)get_cur_cr3()),
+                        PG_P|PG_U|PG_RW);
+                flush_tlb();
+                
+                for (i = 0;i < PAGE_SIZE;i++,j++)
+                {
+                   if (j >= p->node.fsize || j < 0)
+                   {
+                      cur_start_vaddr[i] = 0;
+                   }
+                   else
+                   {
+                      cur_start_vaddr[i] = content[j];
+                   }
+                }
+            }
+            else
+            {
+                ERROR("malloc case");
+            }
+         }
+         flush_tlb();
          return;
       }
       lastp = p;
@@ -89,5 +127,7 @@ void isr_page_fault(uint64_t eno, uint64_t cr2)
       lastp->start -= PAGE_SIZE;  // Increase the stack size
       return; 
    }
-   ERROR("Invalid Page fault erno - %p, cr2 - %p", eno, cr2);
+   kprintf("Segmentation fault\n");
+   exit(-1);
+   //ERROR("Invalid Page fault erno - %p, cr2 - %p", eno, cr2);
 }
