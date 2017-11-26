@@ -141,7 +141,7 @@ void *elf_load_file(void *file, uint64_t cr3)
    {
       case ET_EXEC:
                   //TODO: Implement this later
-                  kprintf("It is executable elf file !! \n");
+                  //kprintf("It is executable elf file !! \n");
                   get_pheaders(hdr, cr3);
                   return NULL;
       case ET_REL:

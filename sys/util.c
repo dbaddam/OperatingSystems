@@ -47,13 +47,24 @@ void strncpy(char* dest, char* src, uint32_t len)
 {
    int i;
   
-   for (i = 0;i < len && *src;i++)
+   for (i = 0;i < len && src[i];i++)
    {
-      *(dest+i) = *(src + i);
+      dest[i] = src[i];
    }
 
    if (i != len)
    {
-      *(dest + i) = '\0';
+      dest[i] = '\0';
    }
+}
+
+void strcpy(char* dest, char* src)
+{
+   int i;
+  
+   for (i = 0;src[i];i++)
+   {
+      dest[i] = src[i];
+   }
+   dest[i] = '\0';
 }

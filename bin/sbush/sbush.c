@@ -71,9 +71,9 @@ void sbustrncpy(char* dest, char* src, int len)
 {
    int i;
   
-   for (i = 0;i < len && *src;i++)
+   for (i = 0;i < len && src[i];i++)
    {
-      *(dest+i) = *(src + i);
+      dest[i] = src[i];
    }
 
    if (i != len)

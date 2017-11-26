@@ -1,26 +1,12 @@
 #include <sys/os.h>
 
-#define TOP_PROCESS 1
-#define INVALID_PID 2048
+#define TOP_PROCESS         1
+#define INVALID_PID         2048
+#define INITIAL_STACK_PAGES 8
 
 task tasks[MAX_PROCESSES];
 
-/*typedef struct 
-{
-   uint32_t head;
-   uint32_t tail;
-   uint64_t ele[MAX_PROCESSES+1];
-}queue;
-*/
-
-
 uint32_t run_head;
-
-/*
-queue run_queue;
-queue spd_queue;
-queue exit_queue;
-*/
 
 void kill_task();
 void create_first_user_task(void (*main)());
@@ -29,16 +15,6 @@ void create_kernel_task(task* t, void (*main)());
 uint64_t get_cur_cr3();
 uint64_t get_new_pid();
 
-/*
-void enqueue(queue* q, uint64_t num);
-uint64_t dequeue(queue* q);
-void add_run_queue(task* t);
-task* remove_run_queue();
-void add_spd_queue(task* t);
-task* remove_spd_queue();
-void add_exit_queue(task* t);
-task* remove_exit_queue();
-*/
 void add_run_queue(task* t);
 void add_wait_queue(task* t);
 void add_avail_queue(task* t);
@@ -71,8 +47,6 @@ void create_kernel_task(task* t, void (*main)())
    t->mm_struct.start  = t->mm_struct.end = 0;
  
    t->kstack[510] = 0; 
-   //t->next = cur_task->next;
-   //cur_task->next =t;
 }
 
 uint64_t get_new_pid()
@@ -105,14 +79,22 @@ void create_first_user_task(void (*main)())
    __asm__ __volatile__("movq %0, %%cr3"
                         :
                         : "r"(t->reg_cr3));
-  
-   uint64_t page = (uint64_t )_get_page(); 
-   //t->ustack = (uint8_t*) USER_STACK_TOP;
-   t->reg_ursp = ((uint64_t)USER_STACK_TOP)- 40;
-   create_page_tables(USER_STACK_TOP - PAGE_SIZE, USER_STACK_TOP - 1,
-                         PHYS_ADDR((uint64_t)page), (uint64_t*)VIRT_ADDR(t->reg_cr3),
+
+   /* 
+   for (i = 0;i < INITIAL_STACK_PAGES;i++)
+   { 
+      uint64_t page = (uint64_t )_get_page(); 
+      //t->ustack = (uint8_t*) USER_STACK_TOP;
+      create_page_tables(USER_STACK_TOP - (i+1)*PAGE_SIZE, 
+                         USER_STACK_TOP + i*PAGE_SIZE - 1,
+                         PHYS_ADDR((uint64_t)page), 
+                         (uint64_t*)VIRT_ADDR(t->reg_cr3),
                          PG_P|PG_RW|PG_U);
-   add_vma(USER_STACK_TOP - PAGE_SIZE, PAGE_SIZE);
+   }
+
+   t->reg_ursp = ((uint64_t)USER_STACK_TOP)- 40;
+   add_vma(USER_STACK_TOP - INITIAL_STACK_PAGES*PAGE_SIZE, INITIAL_STACK_PAGES*PAGE_SIZE);
+   */
 }
 
 // Idle thread
@@ -166,24 +148,115 @@ void load_process(char* filename)
 // Spawns the initial shell
 void start_sbush()
 {
+   char* argv[] = {"bin/simsh", 0};
+   char* envp[] = {"PATH=bin", "HOME=/", 0};
+
    mem_info();
    create_first_user_task(NULL);
    kprintf("Starting sbush....\n");
-   load_process("bin/simsh");
+   execve("bin/simsh", argv, envp);
 }
 
+uint32_t first_load = 1;
 uint64_t execve(char* filename, char* argv[], char* envp[])
 {
-   char fname[256];
+   char      fname[256];
+   int       i, len;
+   int       argc = 0;
+   int       envc = 0;
+   uint64_t *ptr;
+   uint64_t  page;
+   uint64_t  start;
 
    mem_info();
    strncpy(fname, filename, 256); 
-   destroy_address_space(cur_task);
-   free_vmas(cur_task);
-   flush_tlb();
+
+   /* Copy all the arguments since we'll be destroying everything */
+   page = (uint64_t)_get_page();
+   start = page + PAGE_SIZE - 40;
+
+   // Push all the envp content
+   if (envp)
+   {
+
+      for (envc = 0;envp[envc];envc++);
+
+      for (i = envc-1;i >= 0;i--)
+      {
+          len = strlen(envp[i]);
+          start -= len + 1;
+          strcpy((char*)start, envp[i]);
+      }
+   }
+
+   // Push all the argv content
+   if (argv)
+   {
+      for (argc = 0;argv[argc];argc++);
+
+      for (i = argc-1;i >= 0;i--)
+      {
+          len = strlen(argv[i]);
+          start -= len + 1;
+          strcpy((char*)start, argv[i]);
+      }
+   }
+
+   // Align the ptr with 8 byte addr
+   ptr = (uint64_t*)((start - 16) - ((start-16)%8));
+
+   start = USER_STACK_TOP - 40;
+
+   // Push 0 to denoted the end of envp
+   *ptr = 0;
+   ptr--;
+
+   // Push all the env pointers
+   if (envp)
+   {
+      for (i = envc-1;i >= 0;i--)
+      {
+          len = strlen(envp[i]);
+          start -= len + 1;
+          *ptr = start;
+          ptr--;
+      }
+   }
+
+   // Push 0 to denoted the end of argv
+   *ptr = 0;
+   ptr--;
+    
+   // Push all the argv pointers
+   if (argv)
+   {
+      for (i = argc-1;i >= 0;i--)
+      {
+          len = strlen(argv[i]);
+          start -= len + 1;
+          *ptr = start;
+           ptr--;
+      }
+   }
+  
+   *ptr = argc;
+
+   if (!first_load)
+   { 
+      destroy_address_space(cur_task);
+      free_vmas(cur_task);
+      flush_tlb();
+   }
+   else
+   {
+      first_load = 0;
+   }
+
    mem_info();
-   uint64_t page = (uint64_t )_get_page(); 
-   cur_task->reg_ursp = ((uint64_t)USER_STACK_TOP)- 40;
+   //cur_task->reg_ursp = ((uint64_t)USER_STACK_TOP)- 40;
+   // (ptr-page) denotes the size occupied by the contents
+   cur_task->reg_ursp = ((uint64_t)USER_STACK_TOP) - (page + PAGE_SIZE - ((uint64_t)ptr));
+   kprintf("usp - %p\n", cur_task->reg_ursp);
    create_page_tables(USER_STACK_TOP - PAGE_SIZE, USER_STACK_TOP - 1,
                          PHYS_ADDR((uint64_t)page), (uint64_t*)VIRT_ADDR(cur_task->reg_cr3),
                          PG_P|PG_RW|PG_U);
@@ -197,67 +270,6 @@ uint64_t get_cur_cr3()
 {
    return cur_task->reg_cr3;
 }
-
-/*
-void enqueue(queue* q, uint64_t num)
-{
-   q->ele[q->tail] = num;
-   q->tail = (q->tail + 1)%(MAX_PROCESSES+1);
-
-   if (q->head == q->tail)
-   {
-      ERROR("enqueue full - q - %p, head - %d, tail - %d\n",q, q->head, q->tail);
-   }
-}
-
-uint64_t dequeue(queue* q)
-{
-   if (q->head == q->tail)
-   {
-      ERROR("dequeue empty - q - %p, head - %d, tail - %d\n",q, q->head, q->tail);
-   }
-
-   uint64_t num = q->ele[q->head];
-   q->head = (q->head + 1)%(MAX_PROCESSES+1);
-
-   return num;
-}
-
-void add_run_queue(task* t)
-{
-   t->state = RUNNING_STATE;
-   enqueue(&run_queue, t->pid);
-} 
-
-task* remove_run_queue()
-{
-   uint64_t num = dequeue(&run_queue);
-   return &tasks[num];
-}
- 
-void add_spd_queue(task* t)
-{
-   enqueue(&spd_queue, t->pid);
-} 
-
-task* remove_spd_queue()
-{
-   uint64_t num = dequeue(&spd_queue);
-   return &tasks[num];
-}
-
-void add_exit_queue(task* t)
-{
-   enqueue(&exit_queue, t->pid);
-} 
-
-task* remove_exit_queue()
-{
-   uint64_t num = dequeue(&exit_queue);
-   return &tasks[num];
-}
-
-*/
 
 void add_run_queue(task* t)
 {
