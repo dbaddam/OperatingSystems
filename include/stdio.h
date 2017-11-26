@@ -11,6 +11,18 @@ struct FILE
 #define VALID_FD_FILE 1
 };
 
+struct DIR
+{
+   int fd;
+   char name[256];
+//   int flags;
+//#define ALLOCATED_FD_DIR 1
+};
+
+#define MAX_DIR 64
+typedef struct DIR DIR;
+extern DIR dir[MAX_DIR];
+
 #define MAX_FILES 1000
 typedef struct FILE FILE;
 extern FILE files[MAX_FILES];

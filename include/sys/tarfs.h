@@ -24,8 +24,23 @@ struct posix_header_ustar {
   char pad[12];
 };
 
+/*As of now defining the below struct here, IDK kishan!
+struct dirent
+{
+   uint64_t d_ino;
+   uint64_t d_off;
+   uint64_t d_reclen;
+   char d_type;
+#define MAX_SIZE 256
+   char d_name[MAX_SIZE];
+};
+typedef struct dirent dirent;
+*/
+
+//struct DIR
+
+
 //shall define all the functions we mentioned in the tarfs.c
 void init_tarfs();
-int oct2bin(unsigned char *str, int size);
-int getFileFromTarfs(char *, char** filecontent);
+int getFileFromTarfs(char *filename, char **file_start_address);
 #endif

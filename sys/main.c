@@ -24,10 +24,10 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   //register_all_irqs();
   //pci_enum();
 
-  start_sbush();
-  //init_tarfs();  
+  //start_sbush();
+  init_tarfs();  
 
-  //while(1);
+  while(1);
   while (1)
   {
     kprintf("Idle task\n");

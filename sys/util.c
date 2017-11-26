@@ -15,3 +15,19 @@ uint64_t min(uint64_t a, uint64_t b)
       return a;
    return b;
 }
+
+
+void sbustrncpy(char* dest, char* src, int len)
+{
+   int i;
+  
+   for (i = 0;i < len && *src;i++)
+   {   
+      *(dest+i) = *(src + i); 
+   }   
+
+   if (i != len)
+   {   
+      *(dest + i) = '\0';
+   }   
+}

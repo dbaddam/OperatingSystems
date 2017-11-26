@@ -4,14 +4,25 @@
 #include <sys/defs.h>
 
 #define MAX_PROCESSES 1024
-
-
-struct _vma{
+#define MAX_FILES 64
+#define MAX_DIR 64
+struct  _vma{
   uint64_t start;
   uint64_t end;
   struct _vma* next;
 };
 typedef struct _vma vma;
+
+struct fd
+{
+   uint8_t  name[256];
+   uint64_t size;
+   uint64_t offset;
+   uint64_t start_addr;
+#define ALLOCATED_FD 0x001
+   uint64_t flags;
+};
+typedef struct fd fd;
 
 struct _task{
    /* It is very important that the registers stay at the top.
@@ -34,6 +45,7 @@ struct _task{
    uint8_t* ustack;    /* Once we have the ability to read elf64 and figure out where the
                           stack is remove this*/
    struct _task* next;
+   fd file[MAX_FILES];
    uint64_t state;
 #define RUNNABLE_STATE 0x0001
    uint64_t flags_task;
