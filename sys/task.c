@@ -80,7 +80,7 @@ void create_first_user_task(void (*main)())
    __asm__ __volatile__("movq %0, %%cr3"
                         :
                         : "r"(t->reg_cr3));
-
+   strcpy(t->pwd, "/");
    /* 
    for (i = 0;i < INITIAL_STACK_PAGES;i++)
    { 
@@ -528,4 +528,36 @@ uint32_t wait(int32_t *status)
    }
 
    return INVALID_PID;
+}
+
+char* getcwd(char* buf, uint32_t size)
+{
+   task* t = cur_task;
+
+   if (strlen(t->pwd) >= size)
+      return NULL;
+
+   strcpy(buf, t->pwd);
+   return buf;
+}
+
+int32_t chdir(char* path)
+{
+   task* t = cur_task;
+
+   if (path == NULL)
+      return -1;
+
+   strcpy(t->pwd, path);
+   return 0;
+}
+
+uint32_t getpid()
+{
+   return cur_task->pid;
+}
+
+uint32_t getppid()
+{
+   return cur_task->ppid;
 }

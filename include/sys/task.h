@@ -56,6 +56,7 @@ struct _task{
    vma      mm_struct;  /* This is a vma struct, the first entry is a dummy */
    fd       file[MAX_FILES];
 
+   char     pwd[MAX_FILE_NAME_SIZE];
    uint32_t state;
 #define RUNNING_STATE 0x0001
 #define WAITING_STATE 0x0002
@@ -76,21 +77,24 @@ typedef struct _task task;
 
 task* cur_task;
 
-void create_task(task* t, void (*main)(), uint64_t flags, uint64_t* pml4);
 void init_task_system();
 void schedule();
 //void switch_task(task* old, task* new, task** last);
 void switch_task(task* old, task* new);
-void uswitch_task(task* old, task* new);
-void user_main();
+//void uswitch_task(task* old, task* new);
 uint64_t get_cur_cr3();
 void start_sbush();
 void add_vma_anon(uint64_t start, uint64_t size);
 void add_vma_file(uint64_t vaddr, uint64_t fstart, 
                   uint64_t fsize, uint64_t msize);
 void save_child_state(task* p, task* c);
+
 uint64_t fork();
 uint64_t execve(char* filename, char* argv[], char* envp[]);
 void exit(uint32_t status);
 uint32_t wait(int *status);
+char* getcwd(char* buf, uint32_t size);
+int32_t chdir(char* path);
+uint32_t getpid();
+uint32_t getppid();
 #endif

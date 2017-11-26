@@ -1,2 +1,2 @@
 1. We don't have error handling whatsoever.
-2. Adding parameters to execve, path search for execve
+2. chdir, getcwd relative paths or invalid paths.. Go through tarfs?

@@ -18,6 +18,7 @@
 #define __NR_getcwd				79ul
 #define __NR_exit				60ul
 #define __NR_chdir				80ul
+#define __NR_getppid                            110ul
 #define __NR_exit_group				231ul
 
 #endif

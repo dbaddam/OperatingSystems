@@ -350,6 +350,7 @@ void rec(long* b)
 int main(int argc, char *argv[], char *envp[])
 {
    char* buf = "Hello World";
+   char pwd[200];
    write(1, buf, sbustrlen(buf));
    char h[10];
    h[0] = ':';
@@ -357,6 +358,13 @@ int main(int argc, char *argv[], char *envp[])
    h[2] = '\0';
    write(1, h, 2);
 
+   getcwd(pwd, 200);
+   puts(pwd);
+   chdir("/bin/");
+   getcwd(pwd, 200);
+   puts(pwd);
+  
+   while(1); 
    if (fork() == 0)
    {
       char* argv[10] = { "bin/sleep", "Hello", "World", "This", 0};
