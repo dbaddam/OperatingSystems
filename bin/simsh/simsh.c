@@ -364,18 +364,19 @@ int main(int argc, char *argv[], char *envp[])
    getcwd(pwd, 200);
    puts(pwd);
   
-   while(1); 
    if (fork() == 0)
    {
-      char* argv[10] = { "bin/sleep", "Hello", "World", "This", 0};
-      char* envp[10] = { "PATH=/bin", "HOME=/home/knerella", 0};
+      //char* argv[10] = { "bin/sleep", "Hello", "World", "This", 0};
+      //char* envp[10] = { "PATH=/bin", "HOME=/home/knerella", 0};
 
       write (1, "Child", 5);
       yield();
       write (1, "Child", 5);
 
       
-      execve("bin/sleep", argv, envp);
+      while(1)
+         puts("Child\n");
+      //execve("bin/sleep", argv, envp);
    /*   if (fork() == 0)
       {
          write(1, "Child Child", 11);
@@ -392,6 +393,8 @@ int main(int argc, char *argv[], char *envp[])
    }
    else
    {
+      while(1)
+         puts("Parent\n");
       int status;
       write (1, "Parent", 6);
       wait(&status);

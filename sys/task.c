@@ -103,6 +103,9 @@ void idle()
 {
    while(1)
    {
+      __asm__ __volatile("sti");
+      __asm__ __volatile("hlt");
+      __asm__ __volatile("cli");
       schedule();
    }
 }
@@ -136,7 +139,7 @@ void load_process(char* filename)
                         "movq %%rax, %%cr3\n\t"
                         "pushq $0x23\n\t"
                         "pushq %0\n\t"
-                        "pushf\n\t"
+                        "pushq $0x200\n\t"
                         "pushq $0x2B\n\t"
                         "pushq %1\n\t"
                         "iretq"
@@ -261,6 +264,7 @@ uint64_t execve(char* filename, char* argv[], char* envp[])
    create_page_tables(USER_STACK_TOP - PAGE_SIZE, USER_STACK_TOP - 1,
                          PHYS_ADDR((uint64_t)page), (uint64_t*)VIRT_ADDR(cur_task->reg_cr3),
                          PG_P|PG_RW|PG_U);
+   strncpy(cur_task->name, fname, 256); 
    add_vma_anon(USER_STACK_TOP - PAGE_SIZE, PAGE_SIZE);
    load_process(fname);
 
@@ -353,7 +357,7 @@ void schedule()
    to = next_running_task();
    cur_task = to;
 
-   kprintf("Scheduling task %d\n", (int)to->pid);
+   //kprintf("Scheduling task %d\n", (int)to->pid);
    if (cur_task->kstack[511] == 1234567) // HACK - To see if this is child process
    {
       cur_task->reg_rsp = (uint64_t) &cur_task->kstack[494];

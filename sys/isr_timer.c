@@ -1,7 +1,6 @@
-#include <sys/idt.h>
-#include <sys/io.h>
+#include <sys/os.h>
 #include <sys/pic.h>
-#include <sys/kprintf.h>
+#include <sys/io.h>
 
 
 uint64_t secs = 0;
@@ -35,10 +34,13 @@ void isr_timer()
       {
         *temp2 = *temp1;    
       }
+
    }
    //pic_irq_clear_mask(TIMER_IRQ | KEYBOARD_IRQ);
    //pic_irq_clear_mask(TIMER_IRQ);
-   picack(TIMER_IRQ); 
+   picack(TIMER_IRQ);
+   if (subsec == 0)
+      schedule();
 }
 
 void isr_timer_init()

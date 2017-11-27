@@ -52,7 +52,11 @@ void strncpy(char* dest, char* src, uint32_t len)
       dest[i] = src[i];
    }
 
-   if (i != len)
+   if (i == len)
+   {
+      dest[len-1] = '\0';
+   }
+   else
    {
       dest[i] = '\0';
    }
