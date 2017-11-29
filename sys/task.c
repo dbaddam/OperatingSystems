@@ -120,7 +120,26 @@ void wait_forever()
    }
 }
 
-void load_process(char* filename)
+int64_t load_process_test(char* filename)
+{
+   char* file_content;
+   uint64_t fsize;
+
+   fsize = getFileFromTarfs(filename, &file_content);
+   if (fsize > 0)
+   {
+      //elf_load_file(file_content, t->reg_cr3);
+      return 0;
+   }
+   else
+   {
+      return -1;
+   }
+
+   return 0;    
+}
+
+int64_t load_process(char* filename)
 {
    char* file_content;
    task* t;
@@ -131,6 +150,10 @@ void load_process(char* filename)
    if (fsize > 0)
    {
       elf_load_file(file_content, t->reg_cr3);
+   }
+   else
+   {
+      return -1;
    }
 
    set_tss_rsp((void*)&t->kstack[511]);
@@ -146,6 +169,8 @@ void load_process(char* filename)
                          : 
                          : "g"(t->reg_ursp), "g"(t->reg_rip)
                          : "rax", "memory");
+
+   return 0;
    
 }
 
@@ -172,8 +197,14 @@ uint64_t execve(char* filename, char* argv[], char* envp[])
    uint64_t  page;
    uint64_t  start;
 
+
    mem_info();
    strncpy(fname, filename, 256); 
+
+   if (load_process_test(fname))
+   {
+      return -1;
+   }
 
    /* Copy all the arguments since we'll be destroying everything */
    page = (uint64_t)_get_page();
@@ -266,9 +297,8 @@ uint64_t execve(char* filename, char* argv[], char* envp[])
                          PG_P|PG_RW|PG_U);
    strncpy(cur_task->name, fname, 256); 
    add_vma_anon(USER_STACK_TOP - PAGE_SIZE, PAGE_SIZE);
-   load_process(fname);
 
-   return 0;
+   return load_process(fname);
 }
 
 uint64_t get_cur_cr3()

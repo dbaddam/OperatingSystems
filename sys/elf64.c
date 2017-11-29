@@ -121,7 +121,7 @@ void get_pheaders(Elf64_Ehdr *hdr, uint64_t cr3)
          //elf_copy_contents(seg_vaddr, seg_addr, seg_fsize, seg_msize,cr3); 
       }
       //kprintf("i=%d",i);
-      kprintf("flags - %d\n", phdr->p_flags);
+      //kprintf("flags - %d\n", phdr->p_flags);
       //kprintf("segment start_addr=%p,fsz=%d,msz=%d,vaddr=%p\n",seg_addr,seg_fsize,seg_msize,seg_vaddr);  
    }
    return;

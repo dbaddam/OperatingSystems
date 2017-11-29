@@ -32,11 +32,15 @@ _syscall_entry:
    pushq %rdx
    pushq %rsi
    pushq %rdi
+#   pushq %rbp
+#   pushq %rbx
 #   pushq %rax
 /*Here we are basically messing up the 6th argument to pass syscall number */
    movq %rax, %r9
    callq syscall_handler
 #   popq %rax
+#   popq %rbx
+#   popq %rbp
    popq %rdi
    popq %rsi
    popq %rdx
