@@ -20,5 +20,6 @@
 #define __NR_chdir				80ul
 #define __NR_getppid                            110ul
 #define __NR_exit_group				231ul
+#define __NR_sleep				400ul
 
 #endif

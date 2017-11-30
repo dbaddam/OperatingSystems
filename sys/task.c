@@ -17,6 +17,7 @@ uint64_t get_new_pid();
 
 void add_run_queue(task* t);
 void add_wait_queue(task* t);
+void add_suspend_queue(task* t);
 void add_avail_queue(task* t);
 
 void init_task_system();
@@ -316,6 +317,11 @@ void add_wait_queue(task* t)
    t->state = WAITING_STATE;
 }
 
+void add_suspend_queue(task* t)
+{
+   t->state = SUSPEND_STATE;
+}
+
 void add_avail_queue(task* t)
 {
    t->state = AVAIL_STATE;
@@ -495,6 +501,7 @@ void destroy_process(task* t)
    destroy_address_space(t);
    free_vmas(t);
    _free_page((void*)VIRT_ADDR(t->reg_cr3));
+   t->sleep_time = 0;
    add_avail_queue(t);
 }
 
@@ -594,4 +601,32 @@ uint32_t getpid()
 uint32_t getppid()
 {
    return cur_task->ppid;
+}
+
+uint32_t sleep(uint32_t secs)
+{
+   task* t = cur_task;
+
+   if (secs > 0)
+   {
+      t->sleep_time = secs;
+      add_suspend_queue(t);
+      schedule();
+   }
+   return 0; 
+}
+
+void decrement_sleep()
+{
+   int i;
+   for (i = 0;i < MAX_PROCESSES;i++)
+   {
+       if (tasks[i].state == SUSPEND_STATE &&
+           tasks[i].sleep_time  > 0)
+       {
+          tasks[i].sleep_time--;
+          if (tasks[i].sleep_time == 0)
+             add_run_queue(&tasks[i]);
+       }
+   }
 }

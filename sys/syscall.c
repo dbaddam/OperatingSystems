@@ -130,6 +130,9 @@ uint64_t syscall_handler(uint64_t p1, uint64_t p2, uint64_t p3, uint64_t p4,
       case __NR_getppid:
          return (uint64_t) getppid();
          break;
+      case __NR_sleep:
+         return (uint32_t) sleep((uint32_t)p1);
+         break;
       default:
          ERROR("Unknown syscall - %d\n",sysnum);
    }

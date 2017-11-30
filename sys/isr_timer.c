@@ -39,6 +39,9 @@ void isr_timer()
    //pic_irq_clear_mask(TIMER_IRQ | KEYBOARD_IRQ);
    //pic_irq_clear_mask(TIMER_IRQ);
    picack(TIMER_IRQ);
+
+   if (subsec == 0)
+      decrement_sleep();
    /*if (subsec == 0)
       schedule();
     */

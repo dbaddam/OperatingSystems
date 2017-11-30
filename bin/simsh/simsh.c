@@ -368,7 +368,11 @@ int main(int argc, char *argv[], char *envp[])
    chdir("/bin/");
    getcwd(pwd, 200);
    puts(pwd);
-  
+ 
+   puts("Start sleeping");
+   sleep(5);
+   puts("Done sleeping");
+   while (1); 
    if (fork() == 0)
    {
       char* argv[10] = { "bin/sleep", "Hello", "World", "This", 0};
