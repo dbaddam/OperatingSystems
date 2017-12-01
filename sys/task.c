@@ -15,11 +15,6 @@ void create_kernel_task(task* t, void (*main)());
 uint64_t get_cur_cr3();
 uint64_t get_new_pid();
 
-void add_run_queue(task* t);
-void add_wait_queue(task* t);
-void add_suspend_queue(task* t);
-void add_avail_queue(task* t);
-
 void init_task_system();
 void idle();
 void wait_forever();
@@ -127,9 +122,9 @@ int64_t load_process_test(char* filename)
    uint64_t fsize;
 
    fsize = getFileFromTarfs(filename, &file_content);
-   if (fsize > 0)
+   if (fsize > 0 &&
+       is_elf(file_content))
    {
-      //elf_load_file(file_content, t->reg_cr3);
       return 0;
    }
    else
@@ -178,13 +173,13 @@ int64_t load_process(char* filename)
 // Spawns the initial shell
 void start_sbush()
 {
-   char* argv[] = {"bin/simsh", 0};
-   char* envp[] = {"PATH=bin", "HOME=/", 0};
+   char* argv[] = {"bin/sbush", 0};
+   char* envp[] = {"PATH=/bin", "HOME=/", 0};
 
    //mem_info();
    create_first_user_task(NULL);
    kprintf("Starting sbush....\n");
-   execve("bin/simsh", argv, envp);
+   execve("bin/sbush", argv, envp);
 }
 
 uint32_t first_load = 1;
@@ -360,6 +355,9 @@ void init_task_system()
    {
        tasks[i].pid = i;
        tasks[i].state = AVAIL_STATE;
+       bis(tasks[i].file[STDIN].flags, ALLOCATED_FD);
+       bis(tasks[i].file[STDOUT].flags, ALLOCATED_FD);
+       bis(tasks[i].file[STDERR].flags, ALLOCATED_FD);
    }
 
 
@@ -496,6 +494,14 @@ uint64_t fork()
    return 0; 
 }
 
+void free_fds(task* t)
+{
+   int i;
+
+   for (i = 0;i < MAX_FILES;i++)
+      t->file[i].flags = 0;
+}
+
 void destroy_process(task* t)
 {
    destroy_address_space(t);
@@ -503,6 +509,7 @@ void destroy_process(task* t)
    _free_page((void*)VIRT_ADDR(t->reg_cr3));
    t->sleep_time = 0;
    add_avail_queue(t);
+   free_fds(t);
 }
 
 void mark_children_zombie(uint32_t pid)
@@ -585,12 +592,23 @@ char* getcwd(char* buf, uint32_t size)
 int32_t chdir(char* path)
 {
    task* t = cur_task;
-
+   char spath[256];
    if (path == NULL)
       return -1;
 
-   strcpy(t->pwd, path);
-   return 0;
+   /* TODOKISHAN - Add / at the beginning */
+   sanitize_path(path,spath+1);
+   if (is_directory(spath+1) > 0)
+   {
+      spath[0] = '/';
+      kprintf("Good path\n");
+      strcpy(t->pwd, spath);
+      return 0;
+   }
+   else
+   {
+      return -1;
+   } 
 }
 
 uint32_t getpid()
@@ -627,6 +645,19 @@ void decrement_sleep()
           tasks[i].sleep_time--;
           if (tasks[i].sleep_time == 0)
              add_run_queue(&tasks[i]);
+       }
+   }
+}
+
+void wakeup_read()
+{
+   int i;
+   for (i = 0;i < MAX_PROCESSES;i++)
+   {
+       if (tasks[i].state == SUSPEND_STATE &&
+           tasks[i].sleep_time == 0)
+       {
+          add_run_queue(&tasks[i]);
        }
    }
 }

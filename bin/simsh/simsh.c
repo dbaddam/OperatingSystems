@@ -372,10 +372,17 @@ int main(int argc, char *argv[], char *envp[])
 */  
    //while(1); 
  
-   puts("Start sleeping");
+/*   puts("Start sleeping");
    sleep(5);
    puts("Done sleeping");
    while (1); 
+*/
+
+   char input[200];
+   gets(input);
+   puts("Output start");
+   puts(input);
+   puts("Output end");
    if (fork() == 0)
    {
 //      char* argv[10] = { "bin/sleep", "Hello", "World", "This", 0};

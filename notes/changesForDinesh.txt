@@ -1,3 +1,10 @@
+Problem 1:
+   What happens if I give 
+
+ sanitize_directory("/", path);
+ is_directory(path);
+
+********************************************************************
 Problem 1 :
   When running 'ls /usr', we are getting
   'dinesh dinesh dinesh reddy kishan.txt' as output

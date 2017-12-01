@@ -9,7 +9,6 @@
        
        int main(int argc, char *argv[], char *envp[])
        {
-           puts("Inside ls"); 
            char path[MAX_BUFFER_SIZE];
            if(argc > 1)
            {
@@ -32,6 +31,7 @@
               write(1, d->d_name, strlen(d->d_name));
               write(1, "  ", 2);
            }
+           puts("");
            closedir(dirp);
            return 0;
        }  

@@ -146,6 +146,7 @@ void *elf_load_file(void *file, uint64_t cr3);
 void elf_copy_contents(uint64_t vaddr, uint64_t contents, uint64_t fsize, 
                        uint64_t msize, uint64_t cr3);
 
+int32_t is_elf(void *file);
 
 
 

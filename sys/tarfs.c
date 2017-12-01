@@ -628,10 +628,17 @@ uint32_t open(char* unsanitized_path, int32_t mode)
 uint64_t read(uint32_t fd, char *buf, uint64_t count)
 {
    task* t  = cur_task;
+
+   if (fd == STDIN)
+   {
+      return readLine(buf);
+   }
+
    if(!bit(t->file[fd].flags, ALLOCATED_FD))
    {
       return -1;
    }
+
    if(count <= 0)
    {
       return 0;
