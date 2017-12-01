@@ -6,12 +6,26 @@
 typedef unsigned long off_t;
 
 struct dirent {
-// unsigned long d_ino;
-// unsigned long d_off;
-// unsigned short d_reclen;
  char d_name[NAME_MAX+1];
 };
 typedef struct dirent dirent;
+
+
+
+struct DIR 
+{
+   int fd; 
+   char name[NAME_MAX+1];
+   dirent d_entry;
+//   int flags;
+//#define ALLOCATED_FD_DIR 1
+};
+
+#define MAX_DIR 64
+typedef struct DIR DIR;
+DIR dir[MAX_DIR];
+
+
 
 struct linux_dirent {
            long           d_ino;

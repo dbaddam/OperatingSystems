@@ -49,7 +49,6 @@ int sbustrlen(char *str)
 {
    char *c = str;
    int   len = 0;
-
    if (!str)
       return -1;
 
@@ -71,9 +70,9 @@ void sbustrncpy(char* dest, char* src, int len)
 {
    int i;
   
-   for (i = 0;i < len && src[i];i++)
+   for (i = 0;i < len && *src;i++)
    {
-      dest[i] = src[i];
+      *(dest+i) = *(src + i);
    }
 
    if (i != len)
@@ -341,45 +340,61 @@ int runcmd(char *buf)
 }
 
 
+void rec(long* b)
+{
+    long a[100];
+    write(1, "rec", 3);
+    rec(a);
+}
+
 int main(int argc, char *argv[], char *envp[])
 {
-   char  buffer[MAX_BUFFER_SIZE];
-   char *c;
-   FILE *fp = stdin;
+   char* buf = "Inside sleep";
+   write(1, buf, sbustrlen(buf));
+   exit(1);
+   char h[10];
+   h[0] = ':';
+   h[1] = ')';
+   h[2] = '\0';
+   write(1, h, 2);
 
-   if (argc > 1)
+   if (fork() == 0)
    {
-      fp = fopen(argv[1], "r");
-   }
+      write (1, "Child", 5);
+      yield();
+      write (1, "Child", 5);
 
-   setenv("PS1", "sbush>", 1);
-   while(1)
+      execve("bin/sleep", NULL, NULL);
+   /*   if (fork() == 0)
+      {
+         write(1, "Child Child", 11);
+         yield();
+         write(1, "Child Child", 11);
+      }
+      else
+      {
+         write(1, "Child Parent", 12);
+         yield();
+         write(1, "Child Parent", 12);
+         yield();
+      }*/
+   }
+   else
    {
-      if (argc == 1)
-         sbuprintmsg(getenv("PS1"));
-
-      /* fgets stores '\n' AND '\0' at the end of the buffer unlike
-       * gets which stores only '\0'. So, we find '\n' and replace
-       * it with '\0' before starting to process to make our lives easier.
-       * We are going back and forth between fgets and gets. You may
-       * have to uncomment the following code.
-       */
-      if (fgets(buffer, MAX_BUFFER_SIZE, (argc > 1 )? fp:stdin) <= 0)
-      {
-         break;
-      }
-
-      c = buffer;
-      while (*c != '\n' && *c != '\0')
-         c++;
-      *c = '\0';
-
-      if (runcmd(buffer))
-      {
-         break;
-      }
+      int status;
+      write (1, "Parent", 6);
+      wait(&status);
+      write (1, "P A wait", 8);
+      //h[1] = ';';
+      //write(1,h,2);
+      yield();
+      write(1, "After Parent", 12);
+      yield();
+      yield();
+      yield();
+      yield();
    }
-
-   fclose(fp); 
+   //rec(NULL);
+   while(1);
    return 0;
 }

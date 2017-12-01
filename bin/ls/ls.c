@@ -2,11 +2,41 @@
        #include <stdio.h>
        #include <unistd.h>
        #include <stdlib.h>
+       #include <sbuutil.h>
 
        #define MAX_BUFFER_SIZE 1024
 
        
        int main(int argc, char *argv[], char *envp[])
+       {
+           puts("Inside ls"); 
+           char path[MAX_BUFFER_SIZE];
+           if(argc > 1)
+           {
+              strcpy(path, argv[1]);
+           } 
+           else
+           {
+              getcwd(path, MAX_BUFFER_SIZE); 
+           }
+           DIR *dirp;
+           dirp = opendir(path); 
+           if (dirp == NULL)
+           {
+              write(1, "something went wrong in getting dirp pointer!", 256);
+           }
+           
+           dirent *d; 
+           while((d = readdir(dirp)) != NULL)
+           {
+              write(1, d->d_name, strlen(d->d_name));
+              write(1, "  ", 2);
+           }
+           closedir(dirp);
+           return 0;
+       }  
+       
+       int main1(int argc, char *argv[], char *envp[])
        {
            int fd, n;
            char buffer[MAX_BUFFER_SIZE];

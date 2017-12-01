@@ -1,0 +1,22 @@
+Problem 1 :
+  When running 'ls /usr', we are getting
+  'dinesh dinesh dinesh reddy kishan.txt' as output
+
+Problem 2 :
+  ls from root not working
+  'ls /' should return all the directories/files in the root.
+  At this point nothing is getting printed.
+
+Problem 3:
+  Handle '//'
+
+Problem 4:
+  Should not use any local char array in tarfs/elf64
+
+Problem 5:
+   Provide a function given a file name and content,
+   is it an elf64 file?
+
+Problem 6:
+   elf_type LOAD, Should we load only when LOAD is set?
+   Read DOC and in pheader code check if we only need to LOAD

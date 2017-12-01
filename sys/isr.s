@@ -1,5 +1,6 @@
 .globl _isr_keyboard
 .globl _isr_timer
+.globl _isr_page_fault
 .globl _isr_timer_init
 .align 8
 
@@ -47,7 +48,7 @@ _isr_keyboard:
    call isr_keyboard
 
    popRegs
-   sti
+#   sti
    iretq
 
 _isr_timer_init:
@@ -58,7 +59,7 @@ _isr_timer_init:
    call isr_timer_init
 
    popRegs
-   sti
+#   sti
    retq
   
 
@@ -70,5 +71,19 @@ _isr_timer:
    call isr_timer
 
    popRegs
-   sti
+#   sti
+   iretq
+
+_isr_page_fault:
+#   cld
+   cli
+   pushRegs
+
+   movq 120(%rsp), %rdi
+   movq %cr2, %rsi
+   call isr_page_fault
+
+   popRegs
+   add $8, %rsp  #error code gets add to the stack
+#   sti
    iretq

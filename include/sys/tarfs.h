@@ -43,4 +43,10 @@ typedef struct dirent dirent;
 //shall define all the functions we mentioned in the tarfs.c
 void init_tarfs();
 int getFileFromTarfs(char *filename, char **file_start_address);
+uint32_t open(char* path, int32_t mode);
+uint64_t read(uint32_t fd, char *buf, uint64_t count);
+int close(uint32_t fd);
+int opendir_tarfs(char *path, uint64_t flags);
+uint32_t readdir_tarfs(uint32_t fd, char *buf);
+int closedir_tarfs(int fd);
 #endif

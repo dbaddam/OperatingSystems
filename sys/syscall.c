@@ -80,28 +80,73 @@ void init_syscall()
 
 size_t sys_write(int fd, char* buf, int size)
 {
-   kprintf("%s\n", buf);
+   for (int i = 0;i < size;i++)
+       kprintf("%c", buf[i]);
    return size;
 }
 
-int sys_yield()
-{
-   yield();
-   return 1;
-}
 
 /* If we want to add a 6th parameter to this function, we have to change
  * syscall_entry.s */
 uint64_t syscall_handler(uint64_t p1, uint64_t p2, uint64_t p3, uint64_t p4,
                          uint64_t p5, uint64_t sysnum)
 {
+   uint64_t val;
    switch(sysnum)
    {
       case __NR_write:
          return sys_write((int)p1, (char*)p2, (int)p3);
          break;
       case __NR_sched_yield:
-         return sys_yield(); 
+         schedule(); 
+         break;
+      case __NR_fork:
+         val = fork();
+         if (cur_task->kstack[511] == 1234567)
+         {
+            cur_task->kstack[511] = 0;
+            return 0;
+         }
+         return val; 
+         break;
+      case __NR_execve:
+         execve((char*)p1, (char**)p2, (char**)p3); 
+         break;
+      case __NR_exit:
+         exit(p1);
+         break;
+      case __NR_wait4:
+         return wait((int32_t*)p2);
+         break;
+      case __NR_getcwd:
+         return (uint64_t) getcwd((char*)p1, (uint32_t) p2);
+         break;
+      case __NR_chdir:
+         return (uint64_t) chdir((char*)p1);
+         break;
+      case __NR_getpid:
+         return (uint64_t) getpid();
+         break;
+      case __NR_getppid:
+         return (uint64_t) getppid();
+         break;
+      case __NR_open:
+         return (uint64_t) open((char*)p1, (int32_t)p2);
+         break;
+      case __NR_read:
+         return (uint64_t) read((uint32_t)p1, (char*)p2, (uint64_t)p3);
+         break;
+      case __NR_close:
+         return (uint64_t) close((int32_t)p1);
+         break;
+      case __NR_opendirt:
+         return (uint64_t) opendir_tarfs((char*)p1, (int32_t)p2);
+         break;
+      case __NR_readdirt:
+         return (uint64_t) readdir_tarfs((uint32_t)p1, (char*)p2);
+         break;
+      case __NR_closedirt:
+         return (uint64_t) closedir_tarfs((int32_t)p1);
          break;
       default:
          ERROR("Unknown syscall - %d\n",sysnum);

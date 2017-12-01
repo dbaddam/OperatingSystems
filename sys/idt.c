@@ -54,7 +54,7 @@ void _x86_64_asm_lidt(struct idtr_t *idtr);
 
 void dummyitr(uint64_t* inum)
 {
-    ERROR("dummyitr - %d\n", inum);
+    ERROR("dummyitr - %p\n", *inum);
 }
 
 void init_idt()
@@ -90,5 +90,6 @@ void register_all_irqs()
    register_irq(MASTER_PIC_OFFSET + TIMER_IRQ, (uint64_t)_isr_timer);
    //isr_timer_init();
    register_irq(MASTER_PIC_OFFSET + KEYBOARD_IRQ, (uint64_t)_isr_keyboard);
+   register_irq(PAGE_FAULT_IRQ, (uint64_t) _isr_page_fault);
 }
 

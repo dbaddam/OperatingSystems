@@ -1,6 +1,4 @@
-#include <sys/mem.h>
-#include <sys/util.h>
-#include <sys/kprintf.h>
+#include <sys/os.h>
 
 
 
@@ -9,9 +7,6 @@ void create_page_table_entry(uint64_t logical_address,
                              uint64_t* pml4,
                              uint16_t flags);
 
-/*  TODOKISHAN - get_free_page should return virtual address which
- *  would cascade a set of changes in the way page entries are filled.
-*/
 mem_pd* start_pd;
 mem_pd* head_freepd;
 uint64_t last_physaddr;
@@ -38,6 +33,15 @@ void init_mem(uint32_t *modulep, void* kernmem, void *physbase, void *physfree){
   for(smap = (struct smap_t*)(modulep+2); smap < (struct smap_t*)((char*)modulep+modulep[1]+2*4); ++smap) {
     if (smap->type == 1 /* memory */ && smap->length != 0) {
       kprintf("Available Physical Memory [%p-%p]\n", smap->base, smap->base + smap->length);
+
+      if (smap->base < MAX_RAM && smap->base + smap->length >= MAX_RAM)
+      {
+          last_access_mem = MAX_RAM - 1;
+          break;
+      }
+
+      if (smap->base >= MAX_RAM)
+         break;
 
       if (smap->base + smap->length > last_access_mem)
          last_access_mem = smap->base + smap->length;
@@ -110,8 +114,7 @@ void init_mem(uint32_t *modulep, void* kernmem, void *physbase, void *physfree){
 
   for (i = 0;i < kernel_pages;i++)
   {
-      start_pd[i].pid = 0;
-      start_pd[i].flags = USED_MEM_PD;
+      start_pd[i].flags = USED_MEM_PD | BLOCKED_MEM_PD;
   }
 
   head_freepd = start_pd[kernel_pages-1].next;
@@ -129,10 +132,8 @@ void init_mem(uint32_t *modulep, void* kernmem, void *physbase, void *physfree){
   clear_page(pml4);
 
   create_page_tables(KERNEL_BASE, 
-                     /* TODOKISHAN - We have to better this. At this point, a new page
-                        table created after the following address will fail */
                      KERNEL_BASE + last_physaddr - 1,
-//                     KERNEL_BASE + (1 << 30) - 1,
+                     //KERNEL_BASE + (1 << 30) - 1,
                      //KERNEL_BASE + (kernel_pages*PAGE_SIZE) + (100*PAGE_SIZE) - 1,
                      0, pml4, PG_U|PG_P|PG_RW);
   kprintf("Done creating page tables\n");
@@ -155,8 +156,10 @@ uint64_t* init_user_pt()
  * of the page */
 void* _get_page_phys()
 {
-   void* ptr = (void*)((head_freepd-start_pd)*PAGE_SIZE);
-   start_pd[head_freepd-start_pd].flags = USED_MEM_PD;
+   uint64_t index = (uint64_t)(head_freepd-start_pd);
+   void* ptr = (void*)(index*PAGE_SIZE);
+   start_pd[index].flags = USED_MEM_PD;
+   start_pd[index].ref_count = 1;
    head_freepd = head_freepd->next;
 
    if (head_freepd == 0)
@@ -165,11 +168,68 @@ void* _get_page_phys()
    return (void*)ptr; 
 }
 
+uint64_t get_pd_ref(uint64_t vaddr)
+{
+   uint64_t ptr = PHYS_ADDR(vaddr);
+   uint64_t index = ptr/PAGE_SIZE;
+
+   return start_pd[index].ref_count;
+}
+
+void incr_pd_ref(uint64_t vaddr)
+{
+   uint64_t ptr = PHYS_ADDR(vaddr);
+   uint64_t index = ptr/PAGE_SIZE;
+
+   if (!bit (start_pd[index].flags, USED_MEM_PD))
+      ERROR("incr_page_ref Memory never allocated - vaddr %p, paddr %p\n", 
+            vaddr, ptr);
+
+   start_pd[index].ref_count++;
+}
+
+void decr_pd_ref(uint64_t vaddr)
+{
+   uint64_t ptr = PHYS_ADDR(vaddr);
+   uint64_t index = ptr/PAGE_SIZE;
+
+   if (!bit (start_pd[index].flags, USED_MEM_PD))
+      ERROR("decr_page_ref Memory never allocated - vaddr %p, paddr %p\n", 
+            vaddr, ptr);
+
+   if (start_pd[index].ref_count == 1)
+      ERROR("decr_page_ref Invalid Reference count - vaddr %p, paddr %p\n",
+            vaddr, ptr);
+
+   start_pd[index].ref_count--;
+}
+
 /* _get_page returns the pointer to the virtual address
  * of the page. This virtual address is w.r.t the KERNEL_BASE */
 void* _get_page()
 {
    return (void*)(KERNEL_BASE + ((uint64_t)_get_page_phys()));
+}
+
+void _free_page(void* ptr)
+{
+   /* Raise an error if someone sent a free page's ptr
+    */
+   uint64_t index = (PHYS_ADDR((uint64_t)(ptr))/PAGE_SIZE);
+
+   if (!bit (start_pd[index].flags, USED_MEM_PD))
+      ERROR("Memory never allocated - %p\n", ptr);
+
+   if (bit (start_pd[index].flags, BLOCKED_MEM_PD))
+      ERROR("Memory not supposed to be deleted - %p\n", ptr);
+
+   start_pd[index].ref_count--;
+   if (start_pd[index].ref_count == 0)
+   {
+      start_pd[index].next = head_freepd;
+      start_pd[index].flags &= ~USED_MEM_PD;
+      head_freepd = &start_pd[index];
+   }
 }
 
 void* kmalloc(uint64_t size){
@@ -199,23 +259,32 @@ uint64_t trans_addr(uint64_t ptr, uint64_t* pml4)
    return ans;
 }
 
-void _free_page(void* ptr)
+uint32_t trans_vaddr_pt(uint64_t vaddr, uint64_t* pt)
 {
-   /* Raise an error if someone sent a free page's ptr
-    */
-   uint64_t index = (PHYS_ADDR((uint64_t)(ptr))/PAGE_SIZE);
+   uint32_t pml4_index = (vaddr >> 39) & 0x1ff;
+   uint32_t pdp_index  = (vaddr >> 30) & 0x1ff;
+   uint32_t pd_index   = (vaddr >> 21) & 0x1ff;
+   uint32_t pt_index   = (vaddr >> 12) & 0x1ff;
+   
+   uint64_t* pml4 = (uint64_t*) VIRT_ADDR((uint64_t)get_cur_cr3());
+   uint64_t p1 = pml4[pml4_index];
+   if (!bit(p1, PG_P))
+      return 0;
 
-   if (!bit (start_pd[index].flags, USED_MEM_PD))
-      ERROR("Memory never allocated - %p\n", ptr);
+   uint64_t p2 = ((uint64_t*)VIRT_ADDR(CL12(p1)))[pdp_index];
+   if (!bit(p2, PG_P))
+      return 0;
 
-   if (start_pd[index].pid == 0)
-      ERROR("Memory not supposed to be deleted - %p\n", ptr);
+   uint64_t p3 = ((uint64_t*)VIRT_ADDR(CL12(p2)))[pd_index];
+   if (!bit(p3, PG_P))
+      return 0;
 
-   start_pd[index].next = head_freepd;
+   uint64_t p4 = ((uint64_t*)VIRT_ADDR(CL12(p3)))[pt_index];
+   if (!bit(p4, PG_P))
+      return 0;
 
-   start_pd[index].flags &= ~USED_MEM_PD;
-
-   head_freepd = &start_pd[index];
+   *pt = p4;
+   return 1;
 }
 
 void clear_page(void* ptr)
@@ -224,6 +293,106 @@ void clear_page(void* ptr)
    uint64_t* p = (uint64_t*)ptr;
    for (i = 0;i < PAGE_SIZE/8;i++,p++)
        *p = 0;
+}
+
+void destroy_address_space(task* t)
+{
+   
+   uint64_t* cr3 = (uint64_t*) VIRT_ADDR(t->reg_cr3);
+   int i,j,k,l;
+
+   for (i = 0;i < 511;i++)
+   {
+      if (bit(cr3[i], PG_P))
+      {
+         uint64_t* pdp = (uint64_t*)VIRT_ADDR(CL12(cr3[i]));
+
+         for (j = 0;j < 512;j++)
+         {
+             if (bit(pdp[j], PG_P) > 0)
+             {
+                uint64_t* pd = (uint64_t*) VIRT_ADDR(CL12(pdp[j]));
+
+                for (k = 0;k < 512;k++)
+                {
+                    if (bit(pd[k],PG_P) > 0)
+                    {
+                       uint64_t* pt = (uint64_t*) VIRT_ADDR(CL12(pd[k]));
+
+                       for (l = 0;l < 512;l++)
+                       {
+                          if (bit(pt[l], PG_P))
+                          {
+                             _free_page((void*)VIRT_ADDR(CL12(pt[l])));
+                          }
+                       }
+                       _free_page((void*)pt);
+                    }
+                }
+                _free_page((void*)pd);
+             } 
+         } 
+         _free_page((void*)pdp);
+      }
+      cr3[i] = 0; 
+   }
+}
+
+uint64_t copy_page_tables(task* child, task* parent)
+{
+   uint64_t* parent_cr3 = (uint64_t*) VIRT_ADDR(parent->reg_cr3);
+   uint64_t* child_cr3 = (uint64_t*) VIRT_ADDR(((uint64_t)init_user_pt())); 
+   int i,j,k,l;
+
+#define PFLAGS(addr) (addr & 0xFFF)
+   for (i = 0;i < 511;i++)
+   {
+      if (parent_cr3[i] > 0)
+      {
+         uint64_t* newpdp = (uint64_t*) _get_page();
+         uint64_t* pdp = (uint64_t*)VIRT_ADDR(CL12(parent_cr3[i]));
+         clear_page(newpdp);
+         child_cr3[i] = PHYS_ADDR((uint64_t)newpdp) | PFLAGS(parent_cr3[i]);
+
+         for (j = 0;j < 512;j++)
+         {
+             if (pdp[j] > 0)
+             {
+                uint64_t* newpd = (uint64_t*) _get_page();
+                uint64_t* pd = (uint64_t*) VIRT_ADDR(CL12(pdp[j]));
+                clear_page(newpd);
+                newpdp[j] = PHYS_ADDR((uint64_t)newpd) | PFLAGS(pdp[j]);
+
+                for (k = 0;k < 512;k++)
+                {
+                    if (pd[k] > 0)
+                    {
+                       uint64_t* newpt = (uint64_t*) _get_page();
+                       uint64_t* pt = (uint64_t*) VIRT_ADDR(CL12(pd[k]));
+                       clear_page(newpt);
+                       newpd[k] = PHYS_ADDR((uint64_t)newpt) | PFLAGS(pd[k]);
+
+                       for (l = 0;l < 512;l++)
+                       {
+                          if (pt[l] > 0)
+                          {
+                             newpt[l] = pt[l];
+                             bic(newpt[l], PG_RW);
+                             bic(pt[l], PG_RW);
+                             bis(newpt[l], PG_COW);
+                             bis(pt[l], PG_COW);
+
+                             incr_pd_ref(VIRT_ADDR(CL12(pt[l])));
+                          }
+                       }
+                    }
+                }
+             } 
+         } 
+      } 
+   }
+
+   return PHYS_ADDR(((uint64_t)child_cr3));
 }
 
 
@@ -254,18 +423,18 @@ void create_page_tables(uint64_t start_logical_address,
       return;
    }
 
-   int i = 0;
+   //int i = 0;
    for(logical_address = start_logical_address; 
        logical_address < end_logical_address;
        logical_address += PAGE_SIZE, physical_address += PAGE_SIZE
       )
    {
-      if (i %1000 == 0)
-      {
+      //if (i %1000 == 0)
+      //{
          //kprintf("page - %d\n", i);
          //sleep(1);
-      }
-      i++;
+      //}
+      //i++;
       create_page_table_entry(logical_address, physical_address, pml4, flags);
    }
 
@@ -289,7 +458,6 @@ void create_page_table_entry(uint64_t logical_address,
                              uint64_t* pml4,
                              uint16_t flags)
 {
-#define CL12(addr) ((addr >> 12) << 12)
    uint64_t pml4_entry = PML4_INDEX(logical_address);
   
  
@@ -316,14 +484,15 @@ void create_page_table_entry(uint64_t logical_address,
             uint64_t* pt = (uint64_t *) VIRT_ADDR(CL12(pd[pd_entry]));
             uint64_t pt_entry = PT_INDEX(logical_address);
             
+            /* COW case, we may have to update physical address and/or flags */
             if(((pt[pt_entry] & PG_P) == PG_P) 
                /*&&
                ((pt[pt_entry] & PG_RW) == PG_RW)*/)
             {
-               // this means that there is already an entry for the given logical address
-               // also means that this logical address has already been mapped to a physical address earlier
-           
-               ;// DO NOTHING AS OF NOW
+               //kprintf("COW update %p\n", logical_address);
+               pt[pt_entry] = (uint64_t)physical_address;
+               pt[pt_entry] |= flags;
+            
             }else
             {
                pt[pt_entry] = (uint64_t)physical_address;
@@ -382,4 +551,20 @@ void create_page_table_entry(uint64_t logical_address,
       pt[pt_entry] = (uint64_t)physical_address;
       pt[pt_entry] |= flags;
    }
+}
+
+void mem_info()
+{
+   uint64_t i;
+   uint64_t cnt = 0;
+
+   for (i = 0;i < last_physaddr;i += PAGE_SIZE)
+   {
+       if (bit(start_pd[i/PAGE_SIZE].flags, USED_MEM_PD))
+          cnt++;
+   } 
+   //kprintf("head_freepd - %p\n", head_freepd);
+   //kprintf("head_freepd index - %d\n", (head_freepd-start_pd));
+   //kprintf("Next page physaddr - %p\n", (head_freepd-start_pd)*PAGE_SIZE);
+   kprintf("Used pages - %d\n", (int)cnt);
 }

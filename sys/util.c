@@ -7,8 +7,9 @@ void sleep(uint32_t secs)
    //while(1);
    while(secs--)
       for (i = 0;i < 10000;i++)
-         for (j = 0;j < 100000;j++); 
+         for (j = 0;j < 10000;j++); 
 }
+
 uint64_t min(uint64_t a, uint64_t b)
 {
    if (a < b)
@@ -16,18 +17,58 @@ uint64_t min(uint64_t a, uint64_t b)
    return b;
 }
 
+void memcpy(char* dest, char* src, uint64_t bytes){
+   while(bytes--)
+   {
+     *dest = *src;
+     dest++;
+     src++;
+   }
+}
 
-void sbustrncpy(char* dest, char* src, int len)
+uint32_t strlen(char *str)
+{
+   char *c = str;
+   uint32_t   len = 0;
+
+   if (!str)
+      return -1;
+
+   while (*c != '\0')
+   {
+      c++;
+      len++;
+   }
+
+   return len;
+}
+
+void strncpy(char* dest, char* src, uint32_t len)
 {
    int i;
   
-   for (i = 0;i < len && *src;i++)
-   {   
-      *(dest+i) = *(src + i); 
-   }   
+   for (i = 0;i < len && src[i];i++)
+   {
+      dest[i] = src[i];
+   }
 
-   if (i != len)
-   {   
-      *(dest + i) = '\0';
-   }   
+   if (i == len)
+   {
+      dest[i-1] = '\0';
+   }
+   else
+   {
+      dest[i] = '\0';
+   }
+}
+
+void strcpy(char* dest, char* src)
+{
+   int i;
+  
+   for (i = 0;src[i];i++)
+   {
+      dest[i] = src[i];
+   }
+   dest[i] = '\0';
 }

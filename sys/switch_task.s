@@ -18,7 +18,8 @@ switch_task:
    movq %rbp,32(%r8) 
    movq %rsp,40(%r8) 
    movq %rbx,48(%r8)
-   #movq %cr3,64(%r8)
+   movq %cr3,%rdi    #clobbering rdi here
+   movq %rdi,64(%r8)
    # move return address into rip 
    movq %rax,56(%r8) 
 
@@ -31,9 +32,10 @@ switch_task:
    movq 32(%r8), %rbp
    movq 40(%r8), %rsp
    movq 48(%r8), %rbx
-   #movq %cr3,64(%r8)
    movq 56(%r8), %rax
    movq %rax, (%rsp) 
+   movq 64(%r8), %rdi
+   movq %rdi   , %cr3
 //   popq %rdx
 //   movq %rdi, (%rdx)
    retq

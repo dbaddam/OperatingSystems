@@ -18,6 +18,11 @@
 #define __NR_getcwd				79ul
 #define __NR_exit				60ul
 #define __NR_chdir				80ul
+#define __NR_getppid                            110ul
 #define __NR_exit_group				231ul
+#define __NR_readdirt                           232ul
+#define __NR_writedirt                          233ul
+#define __NR_opendirt                           234ul
+#define __NR_closedirt                          235ul
 
 #endif

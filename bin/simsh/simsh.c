@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <dirent.h>
 
 #define MAX_BUFFER_SIZE    1024
 #define MAX_ARG_COUNT      100
@@ -49,7 +50,6 @@ int sbustrlen(char *str)
 {
    char *c = str;
    int   len = 0;
-
    if (!str)
       return -1;
 
@@ -71,9 +71,9 @@ void sbustrncpy(char* dest, char* src, int len)
 {
    int i;
   
-   for (i = 0;i < len && src[i];i++)
+   for (i = 0;i < len && *src;i++)
    {
-      dest[i] = src[i];
+      *(dest+i) = *(src + i);
    }
 
    if (i != len)
@@ -341,45 +341,99 @@ int runcmd(char *buf)
 }
 
 
+void rec(long* b)
+{
+    long a[100];
+    write(1, "rec", 3);
+    rec(a);
+}
+
 int main(int argc, char *argv[], char *envp[])
 {
-   char  buffer[MAX_BUFFER_SIZE];
-   char *c;
-   FILE *fp = stdin;
-
-   if (argc > 1)
+   char* buf = "Hello World";
+   write(1, buf, sbustrlen(buf));
+   char h[10];
+   h[0] = ':';
+   h[1] = ')';
+   h[2] = '\0';
+   write(1, h, 2);
+/*
+   char pwd[200];
+   getcwd(pwd, 200);
+   puts(pwd);
+   chdir("/usr");
+   getcwd(pwd, 200);
+   puts(pwd);
+*/  
+   //while(1); 
+   if (fork() == 0)
    {
-      fp = fopen(argv[1], "r");
-   }
+//      char* argv[10] = { "bin/sleep", "Hello", "World", "This", 0};
+      char* envp[10] = { "PATH=/bin", "HOME=/home/knerella", 0};
+      char* argv[10] = {"/bin/ls", 0};
+      write (1, "Child", 5);
+      yield();
+      write (1, "Child", 5);
 
-   setenv("PS1", "sbush>", 1);
-   while(1)
+      
+      execve("/bin/ls", argv, envp);
+      puts("After ls");
+   /*   if (fork() == 0)
+      {
+         write(1, "Child Child", 11);
+         yield();
+         write(1, "Child Child", 11);
+      }
+      else
+      {
+         write(1, "Child Parent", 12);
+         yield();
+         write(1, "Child Parent", 12);
+         yield();
+      }*/
+   }
+   else
    {
-      if (argc == 1)
-         sbuprintmsg(getenv("PS1"));
-
-      /* fgets stores '\n' AND '\0' at the end of the buffer unlike
-       * gets which stores only '\0'. So, we find '\n' and replace
-       * it with '\0' before starting to process to make our lives easier.
-       * We are going back and forth between fgets and gets. You may
-       * have to uncomment the following code.
-       */
-      if (fgets(buffer, MAX_BUFFER_SIZE, (argc > 1 )? fp:stdin) <= 0)
-      {
-         break;
-      }
-
-      c = buffer;
-      while (*c != '\n' && *c != '\0')
-         c++;
-      *c = '\0';
-
-      if (runcmd(buffer))
-      {
-         break;
-      }
+      int status;
+      write (1, "Parent", 6);
+      wait(&status);
+      write (1, "P A wait", 8);
+      while(1);
+      //h[1] = ';';
+      //write(1,h,2);
+      yield();
+      write(1, "After Parent", 12);
+      yield();
+      yield();
+      yield();
+      yield();
    }
+   //rec(NULL);
+   return 0;
+}
 
-   fclose(fp); 
+int main1(int argc, char *argv[], char *envp[])
+{
+   puts("Hello in simsh\n");
+/*   
+   DIR *dirp;
+   dirp = opendir("usr");
+   
+   dirent *d;
+   //d = readdir(dirp);
+   write(1, "writing an entry", 16);
+   while((d = readdir(dirp)) != NULL)
+   {
+      write(1, d->d_name, sbustrlen(d->d_name));
+      write(1, "  ", 2);
+   }
+   closedir(dirp);
+*/
+/*
+   char buffer[256];
+  getcwd(buffer, 256);
+   write(1, buffer, sbustrlen(buffer));*/
+   //printf("This is dinesh reddy baddam from simsh\n");
+   while(1); 
    return 0;
 }
