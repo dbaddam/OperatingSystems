@@ -162,6 +162,7 @@ void* _get_page_phys()
    start_pd[index].ref_count = 1;
    head_freepd = head_freepd->next;
 
+   //kprintf("id - %d,",(int)index);
    if (head_freepd == 0)
       ERROR("Out of Memory head_freepd - %p\n", head_freepd);
 
@@ -556,15 +557,22 @@ void create_page_table_entry(uint64_t logical_address,
 void mem_info()
 {
    uint64_t i;
-   uint64_t cnt = 0;
+   uint64_t ucnt = 0;
+   uint64_t fcnt = 0;
 
    for (i = 0;i < last_physaddr;i += PAGE_SIZE)
    {
        if (bit(start_pd[i/PAGE_SIZE].flags, USED_MEM_PD))
-          cnt++;
+          ucnt++;
+   }
+ 
+   for (i = 0;i < last_physaddr;i += PAGE_SIZE)
+   {
+       if (!bit(start_pd[i/PAGE_SIZE].flags, USED_MEM_PD))
+          fcnt++;
    } 
    //kprintf("head_freepd - %p\n", head_freepd);
    //kprintf("head_freepd index - %d\n", (head_freepd-start_pd));
    //kprintf("Next page physaddr - %p\n", (head_freepd-start_pd)*PAGE_SIZE);
-   kprintf("Used pages - %d\n", (int)cnt);
+   kprintf("Used pages - %d, free pages - %d\n", (int)ucnt, (int)fcnt);
 }

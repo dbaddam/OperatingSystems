@@ -55,7 +55,7 @@ void isr_page_fault(uint64_t eno, uint64_t cr2)
                 }
                 else
                 {
-                   //kprintf("COW %p\n",vaddr);
+                   //kprintf("COW %d, %p\n",cur_task->pid, vaddr);
                    uint64_t new_page = (uint64_t) _get_page();
                    memcpy((char*)new_page, (char*)old_page, PAGE_SIZE);
 
@@ -123,11 +123,12 @@ void isr_page_fault(uint64_t eno, uint64_t cr2)
    if (p == NULL && cr2 > lastp->start - PAGE_SIZE)
    {
       add_single_page(cr2);
+      //kprintf("Adding stack page\n");
       flush_tlb();
       lastp->start -= PAGE_SIZE;  // Increase the stack size
       return; 
    }
-   kprintf("Segmentation fault\n");
+   kprintf("Segmentation fault - eno - %p, vaddr - %p\n",eno,cr2);
    exit(-1);
    //ERROR("Invalid Page fault erno - %p, cr2 - %p", eno, cr2);
 }

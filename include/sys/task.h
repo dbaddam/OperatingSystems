@@ -37,6 +37,12 @@ struct fd
 };
 typedef struct fd fd;
 
+/*
+ * A task can be in SUSPENDED state if it waiting for a read or if it
+ * is sleeping.
+ * A task can be in WAITING state only when a wait() is called on it.
+*/
+
 struct _task{
    /* It is very important that the registers stay at the top.
     * Bad things will happen otherwise. If you MUST change this, change
@@ -59,6 +65,7 @@ struct _task{
    fd       file[MAX_FILES];
 
    char     pwd[MAX_FILE_NAME_SIZE];
+   uint64_t sleep_time;
    uint32_t state;
 #define RUNNING_STATE 0x0001
 #define WAITING_STATE 0x0002
@@ -99,4 +106,6 @@ char* getcwd(char* buf, uint32_t size);
 int32_t chdir(char* path);
 uint32_t getpid();
 uint32_t getppid();
+uint32_t sleep(uint32_t secs);
+void decrement_sleep();
 #endif

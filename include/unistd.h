@@ -26,7 +26,7 @@ int execvp(const char *file, char *const argv[]);
 pid_t wait(int *status);
 int waitpid(int pid, int *status);
 
-//unsigned int sleep(unsigned int seconds);
+unsigned int sleep(unsigned int seconds);
 
 pid_t getpid(void);
 pid_t getppid(void);
@@ -54,7 +54,7 @@ __asm__ __volatile__ ( \
     "movq %%rax, %0\n\t" \
     : "=r"(sysret) \
     : "r"(__NR_##name) \
-    : "rax", "memory", "r14", "r15" \
+    : "rax", "rdi", "rsi", "rdx", "r10", "memory", "r14", "r15", "rbx", "rbp", "r13", "r12", "r11"\
                      ); 
 
 #define syscall1(name, a1) \
@@ -66,7 +66,7 @@ __asm__ __volatile__ ( \
     "movq %%rax, %0\n\t" \
     : "=r"(sysret) \
     : "r"(__NR_##name), "r" ((ull)a1) \
-    : "rax", "rdi", "memory", "r14", "r15" \
+    : "rax", "rdi", "rsi", "rdx", "r10", "memory", "r14", "r15", "rbx", "rbp", "r13", "r12", "r11"\
                      ); 
 
 #define syscall2(name, a1, a2) \
@@ -79,7 +79,7 @@ __asm__ __volatile__ ( \
     "movq %%rax, %0\n\t" \
     : "=r"(sysret) \
     : "r"(__NR_##name), "r" ((ull)a1), "r" ((ull)a2) \
-    : "rax", "rdi", "rsi", "memory", "r14", "r15" \
+    : "rax", "rdi", "rsi", "rdx", "r10", "memory", "r14", "r15", "rbx", "rbp", "r13", "r12", "r11"\
                      ); 
 
 #define syscall3(name, a1, a2, a3) \
@@ -92,8 +92,8 @@ __asm__ __volatile__ ( \
     "syscall\n\t" \
     "movq %%rax, %0\n\t" \
     : "=r"(sysret) \
-    : "r"(__NR_##name), "r" ((ull)a1), "r" ((ull)a2), "r" ((ull)a3) \
-    : "rax", "rdi", "rsi", "rdx", "memory", "r14", "r15" \
+    : "r"(__NR_##name), "r" ((ull)a1), "r" ((ull)a2), "g" ((ull)a3) \
+    : "rax", "rdi", "rsi", "rdx", "r10", "memory", "r14", "r15", "rbx", "rbp", "r13", "r12", "r11"\
                      ); 
 
 #define syscall4(name, a1, a2, a3, a4) \
@@ -103,11 +103,11 @@ __asm__ __volatile__ ( \
     "movq %2, %%rdi\n\t" \
     "movq %3, %%rsi\n\t" \
     "movq %4, %%rdx\n\t" \
-    "movq %4, %%r10\n\t" \
+    "movq %5, %%r10\n\t" \
     "syscall\n\t" \
     "movq %%rax, %0\n\t" \
     : "=r"(sysret) \
-    : "r"(__NR_##name), "r" ((ull)a1), "r" ((ull)a2), "r" ((ull)a3) \
-    : "rax", "rdi", "rsi", "rdx", "r10", "memory", "r14", "r15" \
+    : "r"(__NR_##name), "r" ((ull)a1), "r" ((ull)a2), "g" ((ull)a3), "g" ((ull)a4) \
+    : "rax", "rdi", "rsi", "rdx", "r10", "memory", "r14", "r15", "rbx", "rbp", "r13", "r12", "r11"\
                      ); 
 #endif

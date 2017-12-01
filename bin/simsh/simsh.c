@@ -348,6 +348,11 @@ void rec(long* b)
     rec(a);
 }
 
+void fcall(int n)
+{
+    puts("fn call\n");
+}
+int glob = 1;
 int main(int argc, char *argv[], char *envp[])
 {
    char* buf = "Hello World";
@@ -366,11 +371,18 @@ int main(int argc, char *argv[], char *envp[])
    puts(pwd);
 */  
    //while(1); 
+ 
+   puts("Start sleeping");
+   sleep(5);
+   puts("Done sleeping");
+   while (1); 
    if (fork() == 0)
    {
 //      char* argv[10] = { "bin/sleep", "Hello", "World", "This", 0};
       char* envp[10] = { "PATH=/bin", "HOME=/home/knerella", 0};
       char* argv[10] = {"/bin/ls", 0};
+      glob = 2;
+
       write (1, "Child", 5);
       yield();
       write (1, "Child", 5);
@@ -378,6 +390,10 @@ int main(int argc, char *argv[], char *envp[])
       
       execve("/bin/ls", argv, envp);
       puts("After ls");
+      //execve("bin/inffork", argv, envp);
+      execve("abc", argv, envp);
+      puts("execve failed");
+      glob++;
    /*   if (fork() == 0)
       {
          write(1, "Child Child", 11);
@@ -398,15 +414,10 @@ int main(int argc, char *argv[], char *envp[])
       write (1, "Parent", 6);
       wait(&status);
       write (1, "P A wait", 8);
+      puts("Before function call\n");
+      fcall(2);
+      puts("After function call\n");
       while(1);
-      //h[1] = ';';
-      //write(1,h,2);
-      yield();
-      write(1, "After Parent", 12);
-      yield();
-      yield();
-      yield();
-      yield();
    }
    //rec(NULL);
    return 0;

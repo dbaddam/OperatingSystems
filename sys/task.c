@@ -17,6 +17,7 @@ uint64_t get_new_pid();
 
 void add_run_queue(task* t);
 void add_wait_queue(task* t);
+void add_suspend_queue(task* t);
 void add_avail_queue(task* t);
 
 void init_task_system();
@@ -103,6 +104,9 @@ void idle()
 {
    while(1)
    {
+      __asm__ __volatile("sti");
+      __asm__ __volatile("hlt");
+      __asm__ __volatile("cli");
       schedule();
    }
 }
@@ -117,7 +121,26 @@ void wait_forever()
    }
 }
 
-void load_process(char* filename)
+int64_t load_process_test(char* filename)
+{
+   char* file_content;
+   uint64_t fsize;
+
+   fsize = getFileFromTarfs(filename, &file_content);
+   if (fsize > 0)
+   {
+      //elf_load_file(file_content, t->reg_cr3);
+      return 0;
+   }
+   else
+   {
+      return -1;
+   }
+
+   return 0;    
+}
+
+int64_t load_process(char* filename)
 {
    char* file_content;
    task* t;
@@ -129,6 +152,10 @@ void load_process(char* filename)
    {
       elf_load_file(file_content, t->reg_cr3);
    }
+   else
+   {
+      return -1;
+   }
 
    set_tss_rsp((void*)&t->kstack[511]);
    __asm__ __volatile__(
@@ -136,13 +163,15 @@ void load_process(char* filename)
                         "movq %%rax, %%cr3\n\t"
                         "pushq $0x23\n\t"
                         "pushq %0\n\t"
-                        "pushf\n\t"
+                        "pushq $0x200\n\t"
                         "pushq $0x2B\n\t"
                         "pushq %1\n\t"
                         "iretq"
                          : 
                          : "g"(t->reg_ursp), "g"(t->reg_rip)
                          : "rax", "memory");
+
+   return 0;
    
 }
 
@@ -171,6 +200,11 @@ uint64_t execve(char* filename, char* argv[], char* envp[])
 
    //mem_info();
    strncpy(fname, filename, 256); 
+
+   if (load_process_test(fname))
+   {
+      return -1;
+   }
 
    /* Copy all the arguments since we'll be destroying everything */
    page = (uint64_t)_get_page();
@@ -261,10 +295,10 @@ uint64_t execve(char* filename, char* argv[], char* envp[])
    create_page_tables(USER_STACK_TOP - PAGE_SIZE, USER_STACK_TOP - 1,
                          PHYS_ADDR((uint64_t)page), (uint64_t*)VIRT_ADDR(cur_task->reg_cr3),
                          PG_P|PG_RW|PG_U);
+   strncpy(cur_task->name, fname, 256); 
    add_vma_anon(USER_STACK_TOP - PAGE_SIZE, PAGE_SIZE);
-   load_process(fname);
 
-   return 0;
+   return load_process(fname);
 }
 
 uint64_t get_cur_cr3()
@@ -280,6 +314,11 @@ void add_run_queue(task* t)
 void add_wait_queue(task* t)
 {
    t->state = WAITING_STATE;
+}
+
+void add_suspend_queue(task* t)
+{
+   t->state = SUSPEND_STATE;
 }
 
 void add_avail_queue(task* t)
@@ -354,7 +393,7 @@ void schedule()
    to = next_running_task();
    cur_task = to;
 
-   kprintf("Scheduling task %d\n", (int)to->pid);
+   //kprintf("Scheduling task %d\n", (int)to->pid);
    if (cur_task->kstack[511] == 1234567) // HACK - To see if this is child process
    {
       cur_task->reg_rsp = (uint64_t) &cur_task->kstack[494];
@@ -462,6 +501,7 @@ void destroy_process(task* t)
    destroy_address_space(t);
    free_vmas(t);
    _free_page((void*)VIRT_ADDR(t->reg_cr3));
+   t->sleep_time = 0;
    add_avail_queue(t);
 }
 
@@ -561,4 +601,32 @@ uint32_t getpid()
 uint32_t getppid()
 {
    return cur_task->ppid;
+}
+
+uint32_t sleep(uint32_t secs)
+{
+   task* t = cur_task;
+
+   if (secs > 0)
+   {
+      t->sleep_time = secs;
+      add_suspend_queue(t);
+      schedule();
+   }
+   return 0; 
+}
+
+void decrement_sleep()
+{
+   int i;
+   for (i = 0;i < MAX_PROCESSES;i++)
+   {
+       if (tasks[i].state == SUSPEND_STATE &&
+           tasks[i].sleep_time  > 0)
+       {
+          tasks[i].sleep_time--;
+          if (tasks[i].sleep_time == 0)
+             add_run_queue(&tasks[i]);
+       }
+   }
 }

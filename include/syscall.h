@@ -24,5 +24,6 @@
 #define __NR_writedirt                          233ul
 #define __NR_opendirt                           234ul
 #define __NR_closedirt                          235ul
+#define __NR_sleep				400ul
 
 #endif
