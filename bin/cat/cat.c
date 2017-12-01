@@ -20,8 +20,11 @@ int main(int argc, char *argv[], char* envp[])
    }
    
    while (fgets(buffer, MAX_BUFFER_SIZE, fp))
-      fputs(buffer,  stdin);  
-   
+   {
+      //fputs(buffer,  stdin); 
+      puts(buffer); 
+   }
    fclose(fp);
+   while(1);
    return 0;
 }

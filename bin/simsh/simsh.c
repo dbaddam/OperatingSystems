@@ -375,20 +375,20 @@ int main(int argc, char *argv[], char *envp[])
    puts("Start sleeping");
    sleep(5);
    puts("Done sleeping");
-   while (1); 
+//   while (1); 
    if (fork() == 0)
    {
 //      char* argv[10] = { "bin/sleep", "Hello", "World", "This", 0};
       char* envp[10] = { "PATH=/bin", "HOME=/home/knerella", 0};
-      char* argv[10] = {"/bin/ls", 0};
+      char* argv[10] = {"/bin/cat", "/usr/kish", 0};
       glob = 2;
 
-      write (1, "Child", 5);
+/*      write (1, "Child", 5);
       yield();
       write (1, "Child", 5);
-
+*/
       
-      execve("/bin/ls", argv, envp);
+      execve("/bin/cat", argv, envp);
       puts("After ls");
       //execve("bin/inffork", argv, envp);
       execve("abc", argv, envp);

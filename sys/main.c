@@ -24,8 +24,8 @@ void start(uint32_t *modulep, void *physbase, void *physfree)
   //register_all_irqs();
   //pci_enum();
 
-  init_tarfs();  
-//  start_sbush();
+  //init_tarfs();  
+  start_sbush();
   //ahci();
 
   kprintf("You should not be here\n");
