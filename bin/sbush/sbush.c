@@ -20,7 +20,6 @@
 #define MAX_PIPE_CMD_SIZE  MAX_ARG_SIZE
 void sbuprintmsg(char *str)
 {
-   stdout->fd = 1;
    fputs(str, stdout);
 }
 

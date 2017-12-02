@@ -25,10 +25,10 @@ void isr_page_fault(uint64_t eno, uint64_t cr2)
 {
    task *t = cur_task;
    vma  *p = &t->mm_struct;
-   vma  *lastp; 
+   //vma  *lastp; 
    int   i;
    // Skip the dummy entry
-   lastp = p;
+   //lastp = p;
    p = p->next;
    while (p != NULL)
    {
@@ -109,16 +109,18 @@ void isr_page_fault(uint64_t eno, uint64_t cr2)
             }
             else
             {
-                ERROR("malloc case");
+                /* malloc or stack */
+                add_single_page(vaddr);
+                //ERROR("malloc case");
             }
          }
          flush_tlb();
          return;
       }
-      lastp = p;
+      //lastp = p;
       p = p->next;
    }
-
+/*
    // This is the stack vma
    // TODOKISHAN - Change this properly
    if (p == NULL && cr2 > lastp->start - PAGE_SIZE)
@@ -129,6 +131,7 @@ void isr_page_fault(uint64_t eno, uint64_t cr2)
       lastp->start -= PAGE_SIZE;  // Increase the stack size
       return; 
    }
+*/
    kprintf("Segmentation fault - eno - %p, vaddr - %p\n",eno,cr2);
    exit(-1);
    //ERROR("Invalid Page fault erno - %p, cr2 - %p", eno, cr2);

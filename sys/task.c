@@ -2,7 +2,7 @@
 
 #define TOP_PROCESS         1
 #define INVALID_PID         2048
-#define INITIAL_STACK_PAGES 8
+#define MAX_STACK_PAGES     (1 << 15)
 
 task tasks[MAX_PROCESSES];
 
@@ -24,6 +24,7 @@ void copy_vmas(vma* dst, vma* src);
 void add_vma(uint64_t start, uint64_t size, uint64_t fstart, 
              uint64_t fsize, uint64_t msize, uint64_t anon);
 void free_vmas(task* t);
+void add_heap_vma();
 
 void schedule();
 void mark_children_zombie(uint32_t pid);
@@ -291,7 +292,8 @@ uint64_t execve(char* filename, char* argv[], char* envp[])
                          PHYS_ADDR((uint64_t)page), (uint64_t*)VIRT_ADDR(cur_task->reg_cr3),
                          PG_P|PG_RW|PG_U);
    strncpy(cur_task->name, fname, 256); 
-   add_vma_anon(USER_STACK_TOP - PAGE_SIZE, PAGE_SIZE);
+   add_vma_anon(USER_STACK_TOP - MAX_STACK_PAGES*PAGE_SIZE, MAX_STACK_PAGES*PAGE_SIZE);
+   add_heap_vma();
 
    return load_process(fname);
 }
@@ -464,6 +466,19 @@ void free_vmas(task* t)
    }
 }
 
+void add_heap_vma()
+{
+   task *t = cur_task;
+   vma  *p = &t->mm_struct;
+   uint64_t heap_start;
+
+   while (p->next->next != NULL)
+      p = p->next;
+
+   heap_start = ((p->end/PAGE_SIZE) * PAGE_SIZE) + 100*PAGE_SIZE;
+   add_vma_anon(heap_start, 0);
+   bis(p->next->flags, HEAP_VMA);
+}
 
 uint64_t fork()
 {
@@ -660,4 +675,44 @@ void wakeup_read()
           add_run_queue(&tasks[i]);
        }
    }
+}
+
+uint64_t sbrk(int32_t incr)
+{
+   task *t = cur_task;
+   vma  *p = &t->mm_struct;
+
+   p = p->next;              //Skip dummy vma
+   while (p != NULL)
+   {
+      if (bit(p->flags,HEAP_VMA))
+      {
+         if (incr >= 0)
+         {
+            p->end += incr;
+            return p->end;
+         }
+         else
+         {
+            ERROR("Negative sbrk");
+         }
+      }
+      p = p->next;
+   }
+ 
+   return -1; 
+}
+
+int32_t access(char* fname)
+{
+  char spath[256];
+  sanitize_path(fname,spath);
+  if (is_file(spath) > 0)
+  {
+     return 0;
+  }
+  else
+  {
+     return -1;
+  }
 }

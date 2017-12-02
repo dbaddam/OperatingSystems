@@ -22,6 +22,8 @@ struct _vma{
   uint64_t end;
   inode    node;
   uint64_t anon;
+  uint64_t flags;
+#define HEAP_VMA 0x001
   struct _vma* next;
 }__attribute__((__packed__));
 typedef struct _vma vma;
@@ -114,4 +116,6 @@ uint32_t getppid();
 uint32_t sleep(uint32_t secs);
 void decrement_sleep();
 void wakeup_read();
+uint64_t sbrk(int32_t incr);
+int32_t access(char* fname);
 #endif

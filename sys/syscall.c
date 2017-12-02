@@ -80,7 +80,7 @@ void init_syscall()
 
 size_t sys_write(int fd, char* buf, int size)
 {
-   if (fd == STDOUT)
+   if (fd == STDOUT || fd == STDERR)
       for (int i = 0;i < size;i++)
           kprintf("%c", buf[i]);
    return size;
@@ -150,7 +150,13 @@ uint64_t syscall_handler(uint64_t p1, uint64_t p2, uint64_t p3, uint64_t p4,
          return (uint64_t) closedir_tarfs((int32_t)p1);
          break;
       case __NR_sleep:
-         return (uint32_t) sleep((uint32_t)p1);
+         return (uint64_t) sleep((uint32_t)p1);
+         break;
+      case __NR_sbrk:
+         return (uint64_t) sbrk((int32_t)p1);
+         break;
+      case __NR_access:
+         return (uint64_t) access((char*)p1);
          break;
       default:
          ERROR("Unknown syscall - %d\n",sysnum);
