@@ -22,6 +22,8 @@ struct _vma{
   uint64_t end;
   inode    node;
   uint64_t anon;
+  uint64_t flags;
+#define HEAP_VMA 0x001
   struct _vma* next;
 }__attribute__((__packed__));
 typedef struct _vma vma;
@@ -107,6 +109,7 @@ uint64_t fork();
 uint64_t execve(char* filename, char* argv[], char* envp[]);
 void exit(uint32_t status);
 uint32_t wait(int *status);
+uint32_t waitpid(int32_t pid, int* status);
 char* getcwd(char* buf, uint32_t size);
 int32_t chdir(char* path);
 uint32_t getpid();
@@ -114,4 +117,6 @@ uint32_t getppid();
 uint32_t sleep(uint32_t secs);
 void decrement_sleep();
 void wakeup_read();
+uint64_t sbrk(int32_t incr);
+int32_t access(char* fname);
 #endif

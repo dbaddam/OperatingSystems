@@ -19,4 +19,6 @@ int setenv(const char *name, const char *value, int overwrite);
 char *getenv(const char *name);
 char **getenvp();
 
+void print_mem();
+
 #endif

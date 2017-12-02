@@ -352,6 +352,29 @@ void fcall(int n)
 {
     puts("fn call\n");
 }
+
+void malloc_test()
+{
+    char* c1, *c2, *c3; 
+    c1 = malloc(10);
+    *c1 = 45;
+    print_mem();
+    c2 = malloc(47);
+    c3 = malloc(56);
+    printf("c2 - %p\n", c2);
+    free(c2);
+    print_mem();
+    c2 = malloc(47);
+    printf("c2 - %p\n", c2);
+    free(c3);
+    c3 = malloc(4096);
+    free(c3);
+    c3 = malloc(100);
+    printf("c3 - %p\n", c3);
+    print_mem();
+    
+    while(1);
+}
 int glob = 1;
 int main(int argc, char *argv[], char *envp[])
 {
@@ -362,6 +385,7 @@ int main(int argc, char *argv[], char *envp[])
    h[1] = ')';
    h[2] = '\0';
    write(1, h, 2);
+   malloc_test();
 /*
    char pwd[200];
    getcwd(pwd, 200);

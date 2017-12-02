@@ -10,6 +10,10 @@ int fgets(char *s, int size, FILE * fp)
 {
     int rcount = 0;
 
+    stdin->fd = 0;
+    stdout->fd = 1;
+    stderr->fd = 2;
+
     if (fp == stdin)
        return read(fp->fd, s, size);
 
@@ -61,6 +65,9 @@ int fgets(char *s, int size, FILE * fp)
 
 char* gets(char* buf)
 {
+   stdin->fd = 0;
+   stdout->fd = 1;
+   stderr->fd = 2;
    int rcount = read(0, buf, 1000); 
    if (rcount >= 0)
       return buf;

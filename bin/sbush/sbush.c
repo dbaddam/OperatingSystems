@@ -20,7 +20,6 @@
 #define MAX_PIPE_CMD_SIZE  MAX_ARG_SIZE
 void sbuprintmsg(char *str)
 {
-   stdout->fd = 1;
    fputs(str, stdout);
 }
 
@@ -478,7 +477,7 @@ int main(int argc, char *argv[], char *envp[])
        * We are going back and forth between fgets and gets. You may
        * have to uncomment the following code.
        */
-      if (fgets(buffer, MAX_BUFFER_SIZE, (argc > 1 )? fp:stdin) <= 0)
+      if (fgets(buffer, MAX_BUFFER_SIZE, (argc > 1 )? fp:stdin) < 0)
       {
          break;
       }
@@ -494,6 +493,7 @@ int main(int argc, char *argv[], char *envp[])
       }
    }
 
+   puts("Bye...");
    fclose(fp); 
    return 0;
 }

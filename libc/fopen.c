@@ -16,6 +16,9 @@ FILE* fopen(const char *path, const char *mode)
    int   wflag  = 0;
    int   fd;
 
+   stdin->fd = 0;
+   stdout->fd = 1;
+   stderr->fd = 2;
 
    for (; *mode;mode++)
    {

@@ -55,6 +55,7 @@ int opendir_tarfs(char *path, uint64_t flags);
 uint32_t readdir_tarfs(uint32_t fd, char *buf);
 int closedir_tarfs(int fd);
 int is_directory(char *dirname);
+int is_file(char *fname);
 int sanitize_path(char *path, char *result);
 int lseek(uint32_t fd, uint64_t seek);
 #endif
