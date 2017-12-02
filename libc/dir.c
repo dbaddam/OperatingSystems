@@ -3,7 +3,6 @@
 #include <syscall.h>
 #include <unistd.h>
 #include <dirent.h>
-#include <sbuutil.h>
 
 int opendirt(const char *pathname, int flags)
 {

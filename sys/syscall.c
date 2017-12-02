@@ -80,8 +80,9 @@ void init_syscall()
 
 size_t sys_write(int fd, char* buf, int size)
 {
-   for (int i = 0;i < size;i++)
-       kprintf("%c", buf[i]);
+   if (fd == STDOUT)
+      for (int i = 0;i < size;i++)
+          kprintf("%c", buf[i]);
    return size;
 }
 

@@ -160,6 +160,19 @@ int contains(char *str, char ch)
    return -1;
 }
 
+int count(char *str, char ch) 
+{
+   int i=0;
+   for(;i<sbustrlen(str);i++)
+   {   
+      if(str[i] == ch) 
+      {   
+         i++;
+      }   
+   }   
+   return i; 
+}
+
 /* given: /bin/ls/../dinesh
  * return: /bin/dinesh
  */
@@ -628,10 +641,17 @@ uint32_t open(char* unsanitized_path, int32_t mode)
 uint64_t read(uint32_t fd, char *buf, uint64_t count)
 {
    task* t  = cur_task;
+
+   if (fd == STDIN)
+   {
+      return readLine(buf);
+   }
+
    if(!bit(t->file[fd].flags, ALLOCATED_FD))
    {
       return -1;
    }
+
    if(count <= 0)
    {
       return 0;
@@ -772,7 +792,7 @@ void init_tarfs()
       //elf_load_file(filecontent);
    }*/
 
-
+/*
    char *name = "//usr//dinesh//..//";
    int fd = opendir_tarfs(name, 1);
    char buf[256];
@@ -783,14 +803,17 @@ void init_tarfs()
       kprintf("file %d = %s\n",k, buf);
    }
    closedir_tarfs(fd);   
+*/
 
-/*
-   char *name = "dinesh";
-   //sanitize_path(path, name);
-   //kprintf("given path = %s\n",path);
-   //kprintf("sanitized path = %s\n",name);
+   char *name = "/";
+   char res[256];
+   sanitize_path(name, res);
+   kprintf("given path = %s\n",name);
+   kprintf("sanitized path = %s\n",res);
+   int a = is_directory(res);
+   kprintf("a = %d\n",a);
    //char *name = "bin";
-   int fd = opendir_tarfs(name, 1);
+/*   int fd = opendir_tarfs(name, 1);
    char buf[256];
    int k;
    kprintf("The entries in %s are: \n",name);

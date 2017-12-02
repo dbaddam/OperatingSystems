@@ -1,7 +1,6 @@
-#include <sys/idt.h>
+#include <sys/os.h>
 #include <sys/io.h>
 #include <sys/pic.h>
-#include <sys/kprintf.h>
 
 #define MAX_BUFFER       4096
 #define KEYBOARD_IN_PORT 0x60
@@ -10,7 +9,8 @@ int ctrl = 0;
 int lines = 0;
 
 char ui_input[MAX_BUFFER];
-int index=0;
+int p_index=0;  // The index of character the producer will write to.
+int c_index=0;  // The index of character the consumer will read next.
 
 void printChar1(char c)
 {
@@ -40,16 +40,52 @@ void printChar(char c)
       ctrl = 0;
    }
    
+   if ((p_index+1)%MAX_BUFFER == c_index)
+   {
+      kprintf("\nOut of terminal buffer\n");
+      return;
+   }
+  
+   p_index = (p_index < MAX_BUFFER) ? p_index : 0;
+   ui_input[p_index++] = c;
    // 1. store in buffer
    if(c == '\n' || c == '\r')
    {
       lines++;
+      wakeup_read();
    }
-   index = (index < MAX_BUFFER) ? index : 0;
-   ui_input[index++] = c;
 
    // 2. send to kprintf as it will echo to screen
    kprintf("%c",c);
+}
+
+int32_t readLine(char* buf)
+{
+   task* t = cur_task;
+
+   while (1)
+   {
+      if (lines > 0)
+      {
+         int i;
+         for (i = 0; ui_input[c_index] != '\n' && ui_input[c_index] != '\r' ;i++)
+         {
+             buf[i] = ui_input[c_index];
+             c_index = (c_index + 1)%MAX_BUFFER;
+         }
+         buf[i] = '\0';
+         c_index = (c_index + 1)%MAX_BUFFER;
+         lines--;
+         return i; 
+      }
+      else
+      {
+         add_suspend_queue(t);
+         schedule();
+      }
+   }
+
+   return -1;
 }
 
 void isr_keyboard()

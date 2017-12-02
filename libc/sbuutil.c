@@ -1,7 +1,7 @@
-#include <sbuutil.h>
+//#include <sbuutil.h>
 
 
-
+/*
 void strncpy(char* dest, char* src, int len)
 {
    int i;
@@ -49,4 +49,4 @@ int strlen(char *str)
    }
    
    return len;
-}
+}*/

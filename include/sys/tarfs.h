@@ -4,6 +4,10 @@
 extern char _binary_tarfs_start;
 extern char _binary_tarfs_end;
 
+#define STDIN 0
+#define STDOUT 1
+#define STDERR 2
+
 struct posix_header_ustar {
   char name[100];
   char mode[8];
@@ -45,8 +49,11 @@ void init_tarfs();
 int getFileFromTarfs(char *filename, char **file_start_address);
 uint32_t open(char* path, int32_t mode);
 uint64_t read(uint32_t fd, char *buf, uint64_t count);
+int32_t readLine(char *buf);
 int close(uint32_t fd);
 int opendir_tarfs(char *path, uint64_t flags);
 uint32_t readdir_tarfs(uint32_t fd, char *buf);
 int closedir_tarfs(int fd);
+int is_directory(char *dirname);
+int sanitize_path(char *path, char *result);
 #endif

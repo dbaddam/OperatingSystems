@@ -1,3 +1,17 @@
+Problem 1:
+   What happens if I give 
+
+ sanitize_directory("/", path);
+ is_directory(path);
+
+Problem 2:
+   read from /usr/kishan.txt
+
+Problem 3:
+   handle ./a.out
+   handle ./
+
+********************************************************************
 Problem 1 :
   When running 'ls /usr', we are getting
   'dinesh dinesh dinesh reddy kishan.txt' as output
@@ -21,10 +35,3 @@ Problem 6:
    elf_type LOAD, Should we load only when LOAD is set?
    Read DOC and in pheader code check if we only need to LOAD
 
-
-Problem 7:
-   read from /usr/kishan.txt
-
-Problem 8:
-   handle ./a.out
-   handle ./

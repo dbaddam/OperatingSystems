@@ -58,3 +58,11 @@ int fgets(char *s, int size, FILE * fp)
 
     return rcount;
 }
+
+char* gets(char* buf)
+{
+   int rcount = read(0, buf, 1000); 
+   if (rcount >= 0)
+      return buf;
+   return NULL; 
+}

@@ -98,6 +98,11 @@ void add_vma_file(uint64_t vaddr, uint64_t fstart,
                   uint64_t fsize, uint64_t msize);
 void save_child_state(task* p, task* c);
 
+void add_run_queue(task* t);
+void add_wait_queue(task* t);
+void add_suspend_queue(task* t);
+void add_avail_queue(task* t);
+
 uint64_t fork();
 uint64_t execve(char* filename, char* argv[], char* envp[]);
 void exit(uint32_t status);
@@ -108,4 +113,5 @@ uint32_t getpid();
 uint32_t getppid();
 uint32_t sleep(uint32_t secs);
 void decrement_sleep();
+void wakeup_read();
 #endif
