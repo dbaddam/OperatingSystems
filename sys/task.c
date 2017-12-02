@@ -570,7 +570,8 @@ uint32_t wait(int32_t *status)
       if (tasks[i].ppid == t->pid &&
           tasks[i].state == ZOMBIE_STATE)
       {
-         *status = tasks[i].exit_status;
+         if (status != NULL)
+            *status = tasks[i].exit_status;
          destroy_process(&tasks[i]);
          return i;
       }
@@ -584,13 +585,47 @@ uint32_t wait(int32_t *status)
       if (tasks[i].ppid == t->pid &&
           tasks[i].state == ZOMBIE_STATE)
       {
-         *status = tasks[i].exit_status;
+         if (status != NULL)
+            *status = tasks[i].exit_status;
          destroy_process(&tasks[i]);
          return i;
       }
    }
 
-   return INVALID_PID;
+   return -1;
+}
+
+uint32_t waitpid(int32_t pid, int* status)
+{
+   task* t = cur_task;
+
+   if (pid == -1)
+   {
+      return wait(status);
+   }
+
+   if (pid < 0)
+      pid *= -1;
+
+   if (pid >= MAX_PROCESSES           ||
+       tasks[pid].state == AVAIL_STATE ||
+       tasks[pid].ppid != t->pid)
+      return -1;
+
+   while (1)
+   { 
+      if (tasks[pid].state == ZOMBIE_STATE)
+      {
+         if (status != NULL)
+            *status = tasks[pid].exit_status;
+         destroy_process(&tasks[pid]);
+         return pid;
+      }
+      add_wait_queue(cur_task);
+      schedule();
+   }
+
+   return -1;
 }
 
 char* getcwd(char* buf, uint32_t size)

@@ -109,6 +109,7 @@ uint64_t fork();
 uint64_t execve(char* filename, char* argv[], char* envp[]);
 void exit(uint32_t status);
 uint32_t wait(int *status);
+uint32_t waitpid(int32_t pid, int* status);
 char* getcwd(char* buf, uint32_t size);
 int32_t chdir(char* path);
 uint32_t getpid();

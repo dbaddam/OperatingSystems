@@ -117,7 +117,7 @@ uint64_t syscall_handler(uint64_t p1, uint64_t p2, uint64_t p3, uint64_t p4,
          exit(p1);
          break;
       case __NR_wait4:
-         return wait((int32_t*)p2);
+         return (uint64_t) waitpid((int32_t)p1, (int32_t*)p2);
          break;
       case __NR_getcwd:
          return (uint64_t) getcwd((char*)p1, (uint32_t) p2);
