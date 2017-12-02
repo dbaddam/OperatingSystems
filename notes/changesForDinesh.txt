@@ -11,6 +11,15 @@ Problem 3:
    handle ./a.out
    handle ./
 
+Problem 4:
+   What happens if I give '..' in sanitize_path()
+
+   Expected output - getcwd + go back one level.
+Problem 5:
+   printf check - Start after fgets() in cat to debug
+Problem 6:
+   Handle backspace in ui_input
+
 ********************************************************************
 Problem 1 :
   When running 'ls /usr', we are getting

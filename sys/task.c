@@ -179,7 +179,7 @@ void start_sbush()
    //mem_info();
    create_first_user_task(NULL);
    kprintf("Starting sbush....\n");
-   execve("bin/simsh", argv, envp);
+   execve("bin/sbush", argv, envp);
 }
 
 uint32_t first_load = 1;
@@ -595,6 +595,13 @@ int32_t chdir(char* path)
    char spath[256];
    if (path == NULL)
       return -1;
+
+
+   if (strcmp(path, "/") == 0)
+   {
+      strcpy(t->pwd, "/");
+      return 0;
+   }
 
    /* TODOKISHAN - Add / at the beginning */
    sanitize_path(path,spath+1);

@@ -160,21 +160,23 @@ int contains(char *str, char ch)
    return -1;
 }
 
-int count(char *str, char ch) 
+int count_ch(char *str, char ch) 
 {
-   int i=0;
-   for(;i<sbustrlen(str);i++)
+   int i;
+   int c=0;
+   for(i=0;i<sbustrlen(str);i++)
    {   
       if(str[i] == ch) 
       {   
-         i++;
+         c++;
       }   
    }   
-   return i; 
+   return c; 
 }
 
 /* given: /bin/ls/../dinesh
  * return: /bin/dinesh
+ * should not ignore the case, str = /usr/kishan.txt
  */
 void handle_dots(char *str, char *result)
 {
@@ -183,6 +185,12 @@ void handle_dots(char *str, char *result)
         //copy str into result, safe side
         strncpy(result, str, sbustrlen(str)+1);
         return;
+   }
+   if(count_ch(str, '.') == 1)
+   {
+      // we assume that this . is only in the file extention ex:"kishan.txt"
+      strncpy(result, str, sbustrlen(str)+1);
+      return;
    }
    int i;
    for(i=0;i<sbustrlen(str);i++)
@@ -294,14 +302,21 @@ int sanitize_path(char *path, char *result)
   }
   else
   { // relative path
+
+    // once special case is to handle if path = "./a.out"
+    if(*path == '.' && *(path+1) == '/' && *(path+2) != '\0')
+    {
+       path += 2;
+    }
     // get pwd and append to path and then handle the dots
      char* buf = (char*) _get_page();
      char* cwd = (char*) _get_page();
      getcwd(cwd, 256);
      if(sbustrlen(cwd)>1) // if cwd = "/", we should not add / again
-     {  
-        cwd[sbustrlen(cwd)] = '/';
-        cwd[sbustrlen(cwd)+1] = '\0';
+     {
+        int l = sbustrlen(cwd);  
+        cwd[l] = '/';
+        cwd[l+1] = '\0';
      }
      char* fullpath = (char*) _get_page(); 
      sbuconcat(cwd, path, fullpath);
@@ -334,6 +349,8 @@ int sanitize_path(char *path, char *result)
 
 /* given a filename and a start address, searches in tarfs and returns the filesize and file content 
  * start address if found, or 0 if not found
+ *
+ * NOTE: make sure you dont sanitize the path before calling this function
  */
 int getFileFromTarfs(char *unsanitized_filename, char **file_start_address)
 {
@@ -362,10 +379,18 @@ int getFileFromTarfs(char *unsanitized_filename, char **file_start_address)
    return 0; 
 }
 
-/* checks if given name is directory or not */
-//int is_directory(char *unsanitized_dirname)
+/* checks if given name is directory or not 
+ * returns 1 on success and -1 on failure
+ *
+ * NOTE: The filename as input should already be sanitized one
+ */
 int is_directory(char *dirname)
 {
+   if(*dirname == '/' && *(dirname+1) == '\0')
+   {
+      // this is a special case as it is root directory
+      return 1;
+   }
    /*char *dirname = (char*) _get_page();
    sanitize_path(unsanitized_dirname, dirname);
    kprintf("in is_directory, dirname = %s\n",dirname);
@@ -394,7 +419,10 @@ int is_directory(char *dirname)
    return -1;
 }
 
-/* checks if given name is file or not */
+/* checks if given name is file or not 
+ *
+ * NOTE: The filename as input should already be sanitized one
+ */
 int is_file(char *filename)
 {  
    /*char* filename = (char*) _get_page();
@@ -426,8 +454,8 @@ int is_file(char *filename)
 }
 
 /* This function lists all the files/directories present in the given directory
- * NOTE: The input argument should be a full path
- * 
+ *
+ * NOTE: This function may not work anymore as many changes are made later, IGNORE 
  */
 void read_directory(char *unsanitized_dirname)
 {
@@ -480,6 +508,7 @@ void read_directory(char *unsanitized_dirname)
 }
 
 /* This function returns the directories/files in the root
+ * 
  */
 int readdir_tarfs_root(int fd, char *buf)
 {
@@ -610,13 +639,20 @@ uint32_t readdir_tarfs(uint32_t fd, char *buf)
 /* Opens a given filepath and returns a fd
  * else, returns 0
  */
-uint32_t open(char* unsanitized_path, int32_t mode)
+//uint32_t open(char* unsanitized_path, int32_t mode)
+uint32_t open(char* path, int32_t mode)
 {
-   char *path = (char *) _get_page();
-   sanitize_path(unsanitized_path, path);
+   //char *path = (char *) _get_page();
+   //sanitize_path(unsanitized_path, path);
    task* t = cur_task;
    char *file_start_addr;
    int fsize = getFileFromTarfs((char *)path, &file_start_addr);
+   if(fsize == 0)
+   {
+      // given path has been sanitized and checked in getfilefromtarfs
+      // and we found that file doesnt exit
+      return 0;
+   }
    int i;
    for(i=0; i<MAX_FILES; i++)
    {
@@ -627,11 +663,11 @@ uint32_t open(char* unsanitized_path, int32_t mode)
          t->file[i].offset = (uint64_t)(file_start_addr);
          t->file[i].start_addr = (uint64_t)(file_start_addr); 
          t->file[i].size = (uint64_t)fsize;
-         _free_page(path);
+         //_free_page(path);
          return (uint32_t)i;
       }
    }
-   _free_page(path);
+   //_free_page(path);
    return 0;
 }
 
@@ -726,6 +762,14 @@ int opendir_tarfs(char *unsanitized_path, uint64_t flags)
 {
    char *path = (char *) _get_page();
    sanitize_path(unsanitized_path, path);
+   
+   // lets check if it is a directory or not
+   if(is_directory(path)==-1)
+   {
+      _free_page(path);
+      return -1;
+   }
+
    task* t = cur_task;
    int i;
    for(i=0; i<MAX_FILES; i++)

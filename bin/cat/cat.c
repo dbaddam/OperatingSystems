@@ -21,8 +21,9 @@ int main(int argc, char *argv[], char* envp[])
    
    while (fgets(buffer, MAX_BUFFER_SIZE, fp))
    {
-      //fputs(buffer,  stdin); 
-      puts(buffer); 
+      //fputs(buffer,  stdin);
+//      puts(buffer); 
+      printf("%s", buffer); 
    }
    fclose(fp);
    while(1);

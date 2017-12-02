@@ -137,6 +137,9 @@ uint64_t syscall_handler(uint64_t p1, uint64_t p2, uint64_t p3, uint64_t p4,
       case __NR_read:
          return (uint64_t) read((uint32_t)p1, (char*)p2, (uint64_t)p3);
          break;
+      case __NR_lseek:
+         return (uint64_t) lseek((uint32_t)p1, (uint64_t)p2);
+         break;
       case __NR_close:
          return (uint64_t) close((int32_t)p1);
          break;

@@ -72,3 +72,34 @@ void strcpy(char* dest, char* src)
    }
    dest[i] = '\0';
 }
+
+int strcmp(char *str1, char *str2)
+{
+   int i;
+
+   if (str1 == NULL && str2 == NULL)
+      return 0;
+
+   if (str1 == NULL)
+      return 1;
+
+   if (str2 == NULL)
+      return -1;
+
+   for (i = 0; str1[i] && str2[i];i++)
+   {   
+      if (str1[i] < str2[i]) 
+         return -1;  
+      if (str1[i] > str2[i]) 
+         return 1;  
+   }   
+
+   if (str1[i] == '\0'&& 
+       str2[i] == '\0')
+      return 0;
+
+   if (str1[i])
+      return 1;
+   
+   return -1;
+}

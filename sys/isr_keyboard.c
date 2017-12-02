@@ -47,7 +47,29 @@ void printChar(char c)
    }
   
    p_index = (p_index < MAX_BUFFER) ? p_index : 0;
-   ui_input[p_index++] = c;
+
+   // if user presses a backspace, the previously entered char 
+   // in the buffer shall be ignored
+   if(c==0x0E)
+   {
+      if(p_index == 0)
+      {
+         p_index = MAX_BUFFER;
+         //return;
+      }
+      p_index--;
+      // should I check for both \n and \r ??
+      if(ui_input[p_index] == '\n' || ui_input[p_index] == '\r')
+      {
+         p_index++;
+         return;
+      }
+      ui_input[p_index] = '\0';
+   }
+   else
+   {
+      ui_input[p_index++] = c;
+   }
    // 1. store in buffer
    if(c == '\n' || c == '\r')
    {

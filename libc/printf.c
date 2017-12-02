@@ -57,6 +57,33 @@ void intTOstring(int number, char *p, int base)
     p[i] = '\0';
     strrev(p);
 }
+void longTOstring(long number, char *p, int base)
+{
+    int i=0;
+    boolean isNeg = false;
+    if(number == 0)
+    {
+        p[i++]='0';
+        p[i]='\0';
+    }
+    if(number < 0)
+    {
+        number = -1*number;
+        isNeg = true;
+    }
+    while(number !=0)
+    {
+        long rem = number % base;
+        p[i++] = rem + '0';
+        number = number/base;
+    }
+    if(isNeg)
+    {
+        p[i++] = '-';
+    }
+    p[i] = '\0';
+    strrev(p);
+}
 void unsignedLongTOstring(unsigned long number, char *p, int base)
 {
     int i=0;
@@ -71,6 +98,50 @@ void unsignedLongTOstring(unsigned long number, char *p, int base)
         p[i++] = rem + '0';
         number = number/base;
     }   
+    p[i] = '\0';
+    strrev(p);
+}
+void longlongTOstring(long long number, char *p, int base)
+{
+    int i=0;
+    boolean isNeg = false;
+    if(number == 0)
+    {
+        p[i++]='0';
+        p[i]='\0';
+    }
+    if(number < 0)
+    {
+        number = -1*number;
+        isNeg = true;
+    }
+    while(number !=0)
+    {
+        long long rem = number % base;
+        p[i++] = rem + '0';
+        number = number/base;
+    }
+    if(isNeg)
+    {
+        p[i++] = '-';
+    }
+    p[i] = '\0';
+    strrev(p);
+}
+void unsignedLongLongTOstring(unsigned long long number, char *p, int base)
+{
+    int i=0;
+    if(number == 0)
+    {
+        p[i++]='0';
+        p[i]='\0';
+    }
+    while(number !=0)
+    {
+        long long rem = number % base;
+        p[i++] = rem + '0';
+        number = number/base;
+    }
     p[i] = '\0';
     strrev(p);
 }
@@ -144,11 +215,59 @@ void printf(const char *fmt, ...)
     {
         if(fmt[i] == '%')
         {
-            if(fmt[i+1] == 'd')
+            if(fmt[i+1] == 'd' || fmt[i+1] == 'u')
             {
                 unsigned int num = va_arg(arg, int);
                 char snum[12];
                 intTOstring(num, snum, 10);
+                for(int j=0; j<stringlen(snum); j++)
+                {
+                    buffer[k++] = snum[j];
+                }
+                i++;
+            }
+            // %lu = unsigned long
+            if(fmt[i+1] == 'l' && fmt[i+2] == 'u')
+            {
+                unsigned long num = va_arg(arg, int);
+                char snum[25];
+                unsignedLongTOstring(num, snum, 10);
+                for(int j=0; j<stringlen(snum); j++)
+                {
+                    buffer[k++] = snum[j];
+                }
+                i++;
+            }
+            // %ld is signed long
+            if(fmt[i+1] == 'l' && fmt[i+2] == 'd')
+            {
+                long num = va_arg(arg, int);
+                char snum[25];
+                longTOstring(num, snum, 10);
+                for(int j=0; j<stringlen(snum); j++)
+                {
+                    buffer[k++] = snum[j];
+                }
+                i++;
+            }
+            // %llu = unsigned long long
+            if(fmt[i+1] == 'l' && fmt[i+2] == 'l'&& fmt[i+3] == 'u')
+            {
+                unsigned long long num = va_arg(arg, int);
+                char snum[25];
+                unsignedLongLongTOstring(num, snum, 10);
+                for(int j=0; j<stringlen(snum); j++)
+                {
+                    buffer[k++] = snum[j];
+                }
+                i++;
+            }
+            // %lld is signed long long
+            if(fmt[i+1] == 'l' && fmt[i+2] == 'l' && fmt[i+3] == 'd')
+            {
+                long long num = va_arg(arg, int);
+                char snum[25];
+                longlongTOstring(num, snum, 10);
                 for(int j=0; j<stringlen(snum); j++)
                 {
                     buffer[k++] = snum[j];
