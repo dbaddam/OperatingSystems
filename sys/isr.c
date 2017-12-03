@@ -132,6 +132,8 @@ void isr_page_fault(uint64_t eno, uint64_t cr2)
       return; 
    }
 */
+   //TODOKISHAN REMOVE THIS
+   print_vmas();
    kprintf("Segmentation fault - eno - %p, vaddr - %p\n",eno,cr2);
    exit(-1);
    //ERROR("Invalid Page fault erno - %p, cr2 - %p", eno, cr2);
