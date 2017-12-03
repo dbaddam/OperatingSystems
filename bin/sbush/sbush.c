@@ -211,7 +211,7 @@ int runcmd(char *buf)
       {
          sbuerr("error - unable to change directory");
       } 
-   }  
+   }
    else if (iscmd(c, "export "))
    {
       char *keystart;
