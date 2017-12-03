@@ -1,4 +1,11 @@
 Problem 1:
+   Run /bin/djk and see how \t is printed
+Problem 2:
+   ls with a lot of files, align it right
+
+
+*******************************************************************
+Problem 1:
    What happens if I give 
 
  sanitize_directory("/", path);

@@ -196,6 +196,7 @@ int64_t load_process(char* filename)
       return -1;
    }
 
+   add_heap_vma();
    set_tss_rsp((void*)&t->kstack[511]);
    __asm__ __volatile__(
                         "movq %%cr3, %%rax\n\t" // Flush TLB
@@ -371,7 +372,6 @@ uint64_t execve(char* filename, char* argv[], char* envp[])
                          PG_P|PG_RW|PG_U);
    strncpy(cur_task->name, fname, 256); 
    add_vma_anon(USER_STACK_TOP - MAX_STACK_PAGES*PAGE_SIZE, MAX_STACK_PAGES*PAGE_SIZE);
-   add_heap_vma();
 
    return load_process(fname);
 }
@@ -542,6 +542,20 @@ void free_vmas(task* t)
       p->next = p->next->next;
       _free_page(c);
    }
+}
+
+void print_vmas()
+{
+   task* t = cur_task;
+   vma  *p = &t->mm_struct;
+
+   p = p->next;
+   while (p != NULL)
+   {
+      kprintf("(%p,%p) ",p->start, p->end);
+      p = p->next;
+   }
+   kprintf("\n");
 }
 
 void add_heap_vma()

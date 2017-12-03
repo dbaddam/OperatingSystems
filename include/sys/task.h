@@ -98,6 +98,7 @@ void start_sbush();
 void add_vma_anon(uint64_t start, uint64_t size);
 void add_vma_file(uint64_t vaddr, uint64_t fstart, 
                   uint64_t fsize, uint64_t msize);
+void print_vmas();
 void save_child_state(task* p, task* c);
 
 void add_run_queue(task* t);
