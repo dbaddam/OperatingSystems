@@ -408,7 +408,7 @@ int getFileFromTarfs(char *unsanitized_filename, char **file_start_address)
       addr += (((filesize+511)/512)+1)*512;
    }
    _free_page(filename);
-   return 0; 
+   return -1; 
 }
 
 /* checks if given name is directory or not 
@@ -683,7 +683,7 @@ uint32_t open(char* path, int32_t mode)
    task* t = cur_task;
    char *file_start_addr;
    int fsize = getFileFromTarfs((char *)path, &file_start_addr);
-   if(fsize == 0)
+   if(fsize == -1)
    {
       // given path has been sanitized and checked in getfilefromtarfs
       // and we found that file doesnt exit
@@ -854,12 +854,12 @@ void init_tarfs()
       {
          break;
       }
-      kprintf("filename = %s,",header->name);
+      kprintf("filename = %s \n",header->name);
       unsigned int filesize = oct2bin((unsigned char *)header->size, 11);
-      kprintf("filesize = %d,",filesize);
+ //     kprintf("filesize = %d,",filesize);
       // headers[i] = *header;
       addr += (((filesize+511)/512)+1)*512;
-      kprintf("addr value = %p\n",addr);
+ //     kprintf("addr value = %p\n",addr);
    }
    /*
    char *filecontent;
@@ -872,7 +872,7 @@ void init_tarfs()
       //elf_load_file(filecontent);
    }*/
 
-
+/*
    char *name = "/usr";
    int fd = opendir_tarfs(name, 1);
    char buf[256];
@@ -883,7 +883,7 @@ void init_tarfs()
       kprintf("file %d = %s\n",k, buf);
    }
    closedir_tarfs(fd);   
-
+*/
 /*
    char *name = "/";
    char res[256];

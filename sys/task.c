@@ -136,7 +136,7 @@ int64_t load_process_test(char* filename, char* interpreter)
    uint64_t fsize;
 
    fsize = getFileFromTarfs(filename, &file_content);
-   if (fsize > 0) 
+   if (fsize >= 0) 
    {
       if (is_elf(file_content))
       {
@@ -187,7 +187,7 @@ int64_t load_process(char* filename)
 
    t = cur_task;
    fsize = getFileFromTarfs(filename, &file_content);
-   if (fsize > 0)
+   if (fsize >= 0)
    {
       elf_load_file(file_content, t->reg_cr3);
    }
