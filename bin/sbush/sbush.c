@@ -5,19 +5,21 @@
 #include <sys/wait.h>
 
 //TODOKISHAN - Bring back these sizes
-/*
+
 #define MAX_BUFFER_SIZE    1024
 #define MAX_ARG_COUNT      100
 #define MAX_ARG_SIZE       100
 #define MAX_PIPE_COUNT     100
 #define MAX_PIPE_CMD_SIZE  MAX_ARG_SIZE
-*/
 
+/*
 #define MAX_BUFFER_SIZE    256
 #define MAX_ARG_COUNT      10
 #define MAX_ARG_SIZE       30
 #define MAX_PIPE_COUNT     1
 #define MAX_PIPE_CMD_SIZE  MAX_ARG_SIZE
+*/
+
 void sbuprintmsg(char *str)
 {
    fputs(str, stdout);
