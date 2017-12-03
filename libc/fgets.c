@@ -33,6 +33,7 @@ int fgets(char *s, int size, FILE * fp)
 
        if (i == rcount)
        {
+          fp->offset += rcount;
           /* do nothing */
        }
        else if (s[i] == '\n')
@@ -48,6 +49,7 @@ int fgets(char *s, int size, FILE * fp)
        } 
        else if(s[i] == '\0')
        {
+          fp->offset += i+1;
           /* do nothing */
        }
     }

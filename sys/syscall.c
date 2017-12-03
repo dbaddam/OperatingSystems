@@ -111,7 +111,7 @@ uint64_t syscall_handler(uint64_t p1, uint64_t p2, uint64_t p3, uint64_t p4,
          return val; 
          break;
       case __NR_execve:
-         execve((char*)p1, (char**)p2, (char**)p3); 
+         return execve((char*)p1, (char**)p2, (char**)p3); 
          break;
       case __NR_exit:
          exit(p1);

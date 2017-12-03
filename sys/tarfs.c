@@ -398,8 +398,8 @@ int getFileFromTarfs(char *unsanitized_filename, char **file_start_address)
          break;
       }
       unsigned int filesize = oct2bin((unsigned char *)header->size, 11);
-      if(sbustrncmp(header->name, filename, sbustrlen(filename)))
-     // if(sbustrcmp(header->name, filename)==0)
+    //  if(sbustrncmp(header->name, filename, sbustrlen(filename)))
+      if(sbustrcmp(header->name, filename)==0)
       {
          *file_start_address = (char *)(addr + 512);
          _free_page(filename);
@@ -630,26 +630,29 @@ uint32_t readdir_tarfs(uint32_t fd, char *buf)
             int index = contains(content,'/');
             if(index != -1)
             {
-               char *content1 = (char*) _get_page();
-               sbustr(content, 0, index-1, content1);
-               if(sbustrncmp(prebuf, content1, sbustrlen(content1))==0)
+               if(content[index+1]=='\0')
                {
-                  strncpy(buf, content1, sbustrlen(content1)+1);
-                  strncpy(prebuf, content1, sbustrlen(content1)+1);
-                  addr += (((filesize+511)/512)+1)*512;
-                  t->file[fd].offset = addr;
-                  _free_page(dircontent);
-                  _free_page(content1);
-                  _free_page(content);
-                  _free_page(dirname);
-                  return 1;
+                  char *content1 = (char*) _get_page();
+                  sbustr(content, 0, index-1, content1);
+         //         if(sbustrncmp(prebuf, content1, sbustrlen(content1))==0)
+                  {
+                     strncpy(buf, content1, sbustrlen(content1)+1);
+                //     strncpy(prebuf, content1, sbustrlen(content1)+1);
+                     addr += (((filesize+511)/512)+1)*512;
+                     t->file[fd].offset = addr;
+                     _free_page(dircontent);
+                     _free_page(content1);
+                     _free_page(content);
+                     _free_page(dirname);
+                     return 1;
+                   }
                 }
             }else
             {
-               if(sbustrncmp(prebuf, content, sbustrlen(content))==0)
+        //       if(sbustrncmp(prebuf, content, sbustrlen(content))==0)
                { 
                   strncpy(buf, content, sbustrlen(content)+1);
-                  strncpy(prebuf, content, sbustrlen(content)+1);
+             //     strncpy(prebuf, content, sbustrlen(content)+1);
                   addr += (((filesize+511)/512)+1)*512;
                   t->file[fd].offset = addr;
                   _free_page(dircontent);
@@ -670,7 +673,7 @@ uint32_t readdir_tarfs(uint32_t fd, char *buf)
 
 
 /* Opens a given filepath and returns a fd
- * else, returns 0
+ * else, returns -1
  */
 //uint32_t open(char* unsanitized_path, int32_t mode)
 uint32_t open(char* path, int32_t mode)
@@ -684,7 +687,7 @@ uint32_t open(char* path, int32_t mode)
    {
       // given path has been sanitized and checked in getfilefromtarfs
       // and we found that file doesnt exit
-      return 0;
+      return -1;
    }
    int i;
    for(i=0; i<MAX_FILES; i++)
@@ -701,7 +704,7 @@ uint32_t open(char* path, int32_t mode)
       }
    }
    //_free_page(path);
-   return 0;
+   return -1;
 }
 
 /* returns number of bytes read and returns the content in buf
@@ -838,7 +841,7 @@ int closedir_tarfs(int fd)
 
 void init_tarfs()
 {
-/*
+
    kprintf("First file name in tarfs = %s\n",&_binary_tarfs_start);   
    //struct posix_header_ustar headers[32];//some number of headers
    uint64_t addr = (uint64_t) &_binary_tarfs_start;
@@ -857,7 +860,7 @@ void init_tarfs()
       // headers[i] = *header;
       addr += (((filesize+511)/512)+1)*512;
       kprintf("addr value = %p\n",addr);
-   }*/
+   }
    /*
    char *filecontent;
    int fsize = getFileFromTarfs("bin/sbush", &filecontent);
@@ -869,8 +872,8 @@ void init_tarfs()
       //elf_load_file(filecontent);
    }*/
 
-/*
-   char *name = "//usr//dinesh//..//";
+
+   char *name = "/usr";
    int fd = opendir_tarfs(name, 1);
    char buf[256];
    int k;
@@ -880,8 +883,8 @@ void init_tarfs()
       kprintf("file %d = %s\n",k, buf);
    }
    closedir_tarfs(fd);   
-*/
 
+/*
    char *name = "/";
    char res[256];
    sanitize_path(name, res);
@@ -890,7 +893,7 @@ void init_tarfs()
    int a = is_directory(res);
    kprintf("a = %d\n",a);
    //char *name = "bin";
-/*   int fd = opendir_tarfs(name, 1);
+*/ /*   int fd = opendir_tarfs(name, 1);
    char buf[256];
    int k;
    kprintf("The entries in %s are: \n",name);

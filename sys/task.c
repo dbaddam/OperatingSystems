@@ -173,10 +173,10 @@ int64_t load_process_test(char* filename, char* interpreter)
    }
    else
    {
-      return -1;
+      return NOEXEC_FILE;
    }
 
-   return 0;    
+   return NOEXEC_FILE;    
 }
 
 int64_t load_process(char* filename)
@@ -743,7 +743,6 @@ int32_t chdir(char* path)
    if (is_directory(spath+1) > 0)
    {
       spath[0] = '/';
-      kprintf("Good path\n");
       strcpy(t->pwd, spath);
       return 0;
    }

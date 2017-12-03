@@ -456,6 +456,19 @@ int runcmd(char *buf)
 }
 
 
+void print_prompt()
+{
+   char buf[200] = "sbush:";
+   int len;
+   getcwd(buf+sbustrlen(buf), 200);
+   len = sbustrlen(buf);
+   buf[len] = '$';
+   buf[len+1] = ' ';
+   buf[len+2] = '\0';
+  
+   sbuprintmsg(buf);
+}
+
 int main(int argc, char *argv[], char *envp[])
 {
    char  buffer[MAX_BUFFER_SIZE];
@@ -471,7 +484,7 @@ int main(int argc, char *argv[], char *envp[])
    while(1)
    {
       if (argc == 1)
-         sbuprintmsg(getenv("PS1"));
+         print_prompt();
 
       /* fgets stores '\n' AND '\0' at the end of the buffer unlike
        * gets which stores only '\0'. So, we find '\n' and replace
