@@ -22,7 +22,9 @@
            dirp = opendir(path); 
            if (dirp == NULL)
            {
-              write(1, "something went wrong in getting dirp pointer!", 256);
+              puts("Given path might not be a correct one!");
+              //write(1, "something went wrong in getting dirp pointer!", 256);
+              return -1;
            }
            
            dirent *d; 

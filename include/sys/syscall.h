@@ -28,6 +28,8 @@
 #define __NR_closedirt                          235ul
 #define __NR_sleep				400ul
 #define __NR_sbrk				401ul
+#define __NR_ps  				402ul
+#define __NR_kill  				403ul
 
 size_t sys_write(int, char*, int);
 void init_syscall();

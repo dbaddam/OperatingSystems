@@ -32,6 +32,8 @@ pid_t getpid(void);
 pid_t getppid(void);
 
 void yield();
+void ps();
+void kill(int pid);
 
 // OPTIONAL: implement for ``on-disk r/w file system (+10 pts)''
 #define SEEK_SET 0

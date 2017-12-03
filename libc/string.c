@@ -97,3 +97,27 @@ char *strcat(char *dest, const char *src)
 
    return dest;
 }
+
+int atoi(char* s, int* num)
+{
+   int sign = 1;
+
+   *num = 0;
+   if (*s == '-')
+   {
+      sign = -1;
+      s++;
+   }
+
+   while (*s)
+   {
+      if (*s < '0' || *s > '9')
+         return 0;
+      *num = (*num)*10 + (*s - '0');
+      s++;
+   }
+  
+   *num = (*num)*sign;
+   return 1;
+}
+

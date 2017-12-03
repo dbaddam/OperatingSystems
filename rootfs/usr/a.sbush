@@ -1,0 +1,4 @@
+#! /bin/sbush
+pwd
+cd /
+ls

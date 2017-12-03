@@ -340,7 +340,7 @@ int runcmd(char *buf)
             // TODOKISHAN Ideally we should wait for the pids, otherwise 
              // previous background process can interfere with wait 
             for (i = 0;i < pipeargcount;i++)
-               wait(&status);
+               waitpid(pid, &status);
          }
       }
       /*
@@ -493,7 +493,8 @@ int main(int argc, char *argv[], char *envp[])
       }
    }
 
-   puts("Bye...");
+   if (argc == 1)
+      puts("Bye...");
    fclose(fp); 
    return 0;
 }

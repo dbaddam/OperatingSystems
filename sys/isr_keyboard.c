@@ -8,9 +8,9 @@ int shift = 0;
 int ctrl = 0;
 int lines = 0;
 
-char ui_input[MAX_BUFFER];
-int p_index=0;  // The index of character the producer will write to.
-int c_index=0;  // The index of character the consumer will read next.
+char ui_input[MAX_BUFFER] = {'\n'};
+int p_index=1;  // The index of character the producer will write to.
+int c_index=1;  // The index of character the consumer will read next.
 
 void printChar1(char c)
 {
@@ -61,7 +61,7 @@ void printChar(char c)
       // should I check for both \n and \r ??
       if(ui_input[p_index] == '\n' || ui_input[p_index] == '\r')
       {
-         p_index++;
+         p_index = (p_index+1)%MAX_BUFFER;
          return;
       }
       ui_input[p_index] = '\0';

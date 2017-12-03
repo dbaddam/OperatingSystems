@@ -8,3 +8,10 @@ pid_t getpid()
 
    return (pid_t)sysret;
 }
+
+pid_t getppid()
+{
+   syscall0(getppid);
+
+   return (pid_t)sysret;
+}

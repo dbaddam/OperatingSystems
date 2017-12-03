@@ -3,8 +3,20 @@
 #define TOP_PROCESS         1
 #define INVALID_PID         2048
 #define MAX_STACK_PAGES     (1 << 15)
+#define INTERPRETER_MAX_LEN 127
 
+#define NOEXEC_FILE         0
+#define ELF_FILE            1
+#define INTERPRETER_FILE    2
 task tasks[MAX_PROCESSES];
+
+char* state_str[10] = {"INVALID", 
+                       "READY  ",
+                       "WAIT   ",
+                       "SUSPEND", 
+                       "ZOMBIE ",
+                       "AVAIL  ",
+                       "COOK   "};
 
 uint32_t run_head;
 
@@ -28,6 +40,7 @@ void add_heap_vma();
 
 void schedule();
 void mark_children_zombie(uint32_t pid);
+void destroy_process(task* t, uint32_t free_pcb);
 
 void create_kernel_task(task* t, void (*main)())
 {
@@ -117,16 +130,46 @@ void wait_forever()
    }
 }
 
-int64_t load_process_test(char* filename)
+int64_t load_process_test(char* filename, char* interpreter)
 {
    char* file_content;
    uint64_t fsize;
 
    fsize = getFileFromTarfs(filename, &file_content);
-   if (fsize > 0 &&
-       is_elf(file_content))
+   if (fsize > 0) 
    {
-      return 0;
+      if (is_elf(file_content))
+      {
+         return ELF_FILE;
+      }
+      else
+      {
+         int fd = open(filename, 0);
+         int rcount;
+         int i;
+
+         if (fd < 0)
+            return NOEXEC_FILE;
+         rcount = read(fd, interpreter, INTERPRETER_MAX_LEN);
+
+         if (rcount > 2 &&
+             strcmp(interpreter, "#! "))
+         {
+            for (i = 0;i < rcount;i++)
+            {
+               if (interpreter[i] == '\n')
+                  interpreter[i] = '\0';
+            }
+
+            if (getFileFromTarfs(interpreter+3, &file_content) > 0)
+               return INTERPRETER_FILE;
+         }
+         else
+         {
+            return NOEXEC_FILE;
+         }
+         close(fd); 
+      }
    }
    else
    {
@@ -187,17 +230,21 @@ uint32_t first_load = 1;
 uint64_t execve(char* filename, char* argv[], char* envp[])
 {
    char      fname[256];
+   char      interpreter[INTERPRETER_MAX_LEN];
+   char*     iptr = interpreter + 3;
    int       i, len;
    int       argc = 0;
    int       envc = 0;
    uint64_t *ptr;
    uint64_t  page;
    uint64_t  start;
+   int64_t  ftype;
 
    //mem_info();
    strncpy(fname, filename, 256); 
 
-   if (load_process_test(fname))
+   ftype = load_process_test(fname, interpreter);
+   if (ftype == NOEXEC_FILE)
    {
       return -1;
    }
@@ -231,6 +278,17 @@ uint64_t execve(char* filename, char* argv[], char* envp[])
           start -= len + 1;
           strcpy((char*)start, argv[i]);
       }
+   }
+
+   if (ftype == INTERPRETER_FILE)
+   {
+      len = strlen(fname);
+      start -= len + 1;
+      strcpy((char*)start, fname);
+   
+      len = strlen(iptr);
+      start -= len + 1;
+      strcpy((char*)start, iptr);   
    }
 
    // Align the ptr with 8 byte addr
@@ -270,12 +328,32 @@ uint64_t execve(char* filename, char* argv[], char* envp[])
       }
    }
   
-   *ptr = argc;
+   if (ftype == INTERPRETER_FILE)
+   {
+      len = strlen(fname);
+      start -= len + 1;
+      *ptr = start;
+      ptr--;
+   
+      len = strlen(iptr);
+      start -= len + 1;
+      *ptr = start;
+      ptr--;
+   }
+
+   if (ftype == INTERPRETER_FILE)
+   {
+      *ptr = argc + 2;
+      strcpy(fname, iptr);
+   }
+   else
+      *ptr = argc;
+
+   // The file name to execute now is the interpreter
 
    if (!first_load)
-   { 
-      destroy_address_space(cur_task);
-      free_vmas(cur_task);
+   {
+      destroy_process(cur_task, 0/* pcb,cr3 also */); 
       flush_tlb();
    }
    else
@@ -513,21 +591,25 @@ void free_fds(task* t)
 {
    int i;
 
-   for (i = 0;i < MAX_FILES;i++)
+   for (i = 3;i < MAX_FILES;i++)
       t->file[i].flags = 0;
 }
 
-void destroy_process(task* t)
+void destroy_process(task* t, uint32_t free_pcb)
 {
    destroy_address_space(t);
    free_vmas(t);
-   _free_page((void*)VIRT_ADDR(t->reg_cr3));
    t->sleep_time = 0;
-   add_avail_queue(t);
    free_fds(t);
+
+   if (free_pcb)
+   {
+      _free_page((void*)VIRT_ADDR(t->reg_cr3));
+      add_avail_queue(t);
+   }
 }
 
-void mark_children_zombie(uint32_t pid)
+void update_children_pid(uint32_t pid)
 {
    int i;
 
@@ -536,28 +618,31 @@ void mark_children_zombie(uint32_t pid)
        if (tasks[i].state != AVAIL_STATE &&
            tasks[i].ppid == pid)
        {
-          tasks[i].state = ZOMBIE_STATE;
-          tasks[i].pid = TOP_PROCESS;
-          mark_children_zombie(i);
+          //tasks[i].state = ZOMBIE_STATE;
+          tasks[i].ppid = TOP_PROCESS;
+          //mark_children_zombie(i);
        }
    }
      
    // Does this make sense here?
-   add_run_queue(&tasks[TOP_PROCESS]); 
+   //add_run_queue(&tasks[TOP_PROCESS]); 
 }
 
-void exit(uint32_t status)
+void exit_int(task*t, uint32_t status)
 {
-   task* t = cur_task;
-
    t->state = ZOMBIE_STATE;
    t->exit_status = status;
-   mark_children_zombie(t->pid);
+   update_children_pid(t->pid);
 
    if (tasks[t->ppid].state == WAITING_STATE)
       add_run_queue(&tasks[t->ppid]);
 
    schedule();
+}
+
+void exit(uint32_t status)
+{
+   exit_int(cur_task, status);
 }
 
 uint32_t wait(int32_t *status)
@@ -572,7 +657,7 @@ uint32_t wait(int32_t *status)
       {
          if (status != NULL)
             *status = tasks[i].exit_status;
-         destroy_process(&tasks[i]);
+         destroy_process(&tasks[i], 1);
          return i;
       }
    }
@@ -587,7 +672,7 @@ uint32_t wait(int32_t *status)
       {
          if (status != NULL)
             *status = tasks[i].exit_status;
-         destroy_process(&tasks[i]);
+         destroy_process(&tasks[i], 1);
          return i;
       }
    }
@@ -618,7 +703,7 @@ uint32_t waitpid(int32_t pid, int* status)
       {
          if (status != NULL)
             *status = tasks[pid].exit_status;
-         destroy_process(&tasks[pid]);
+         destroy_process(&tasks[pid], 1);
          return pid;
       }
       add_wait_queue(cur_task);
@@ -757,4 +842,42 @@ int32_t access(char* fname)
   {
      return -1;
   }
+}
+
+char* state_to_str(uint32_t type)
+{
+   if (type >= COOK_STATE)
+      return state_str[0];
+   return state_str[type];
+}
+
+void ps()
+{
+   int i;
+
+   kprintf("PID  PPID  STATE  CMD\n");
+   for (i = 0;i < MAX_PROCESSES;i++)
+   {
+      if (tasks[i].state != AVAIL_STATE)
+      {
+         kprintf("%d %d %s %s\n", tasks[i].pid, tasks[i].ppid, state_to_str(tasks[i].state), tasks[i].name);
+      }
+   }
+}
+
+void kill(int32_t pid)
+{
+   if (pid == 0 || pid == 1)
+   {
+      kprintf("forever running process\n");
+      return;
+   }
+
+   if (pid < 0 || pid >= MAX_PROCESSES ||
+       tasks[pid].state == AVAIL_STATE)
+   {
+      kprintf("No such process - %d\n", pid);
+   }
+
+   exit_int(&tasks[pid], 1234);
 }

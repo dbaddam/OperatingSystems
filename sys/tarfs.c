@@ -74,6 +74,37 @@ int sbustrncmp(char *str1, char *str2, int size)
 
    return 1;
 }
+/* returns 0 if both strings are same */
+int sbustrcmp(char *str1, char *str2)
+{
+   int i;
+
+   if (str1 == NULL && str2 == NULL)
+      return 0;
+
+   if (str1 == NULL)
+      return 1;
+
+   if (str2 == NULL)
+      return -1; 
+
+   for (i = 0; str1[i] && str2[i];i++)
+   {   
+      if (str1[i] < str2[i]) 
+         return -1;  
+      if (str1[i] > str2[i]) 
+         return 1;  
+   }   
+
+   if (str1[i] == '\0'&& 
+       str2[i] == '\0')
+      return 0;
+
+   if (str1[i])
+      return 1;
+   
+   return -1; 
+}
 
 /* Returns the substring from start to end in given string
  * else return -1
@@ -368,6 +399,7 @@ int getFileFromTarfs(char *unsanitized_filename, char **file_start_address)
       }
       unsigned int filesize = oct2bin((unsigned char *)header->size, 11);
       if(sbustrncmp(header->name, filename, sbustrlen(filename)))
+     // if(sbustrcmp(header->name, filename)==0)
       {
          *file_start_address = (char *)(addr + 512);
          _free_page(filename);
@@ -406,6 +438,7 @@ int is_directory(char *dirname)
       }
       unsigned int filesize = oct2bin((unsigned char *)header->size, 11);   
       if(sbustrncmp(header->name, dirname, sbustrlen(dirname)))
+     // if(sbustrcmp(header->name, dirname)==0)
       {   
          if((char)(header->typeflag[0]) == '5')
          {
@@ -438,7 +471,7 @@ int is_file(char *filename)
          break;
       }
       unsigned int filesize = oct2bin((unsigned char *)header->size, 11);
-      if(sbustrncmp(header->name, filename, sbustrlen(filename)))
+      if(sbustrcmp(header->name, filename)==0)
       {   
          if((char)(header->typeflag[0]) == '\0' || 
             (char)(header->typeflag[0]) == '0')

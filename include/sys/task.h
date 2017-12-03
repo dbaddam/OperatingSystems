@@ -71,10 +71,10 @@ struct _task{
    uint32_t state;
 #define RUNNING_STATE 0x0001
 #define WAITING_STATE 0x0002
-#define SUSPEND_STATE 0x0004
-#define ZOMBIE_STATE  0x0008
-#define AVAIL_STATE   0x0010
-#define COOK_STATE    0x0020
+#define SUSPEND_STATE 0x0003
+#define ZOMBIE_STATE  0x0004
+#define AVAIL_STATE   0x0005
+#define COOK_STATE    0x0006
 
    uint32_t exit_status;
 
@@ -119,4 +119,6 @@ void decrement_sleep();
 void wakeup_read();
 uint64_t sbrk(int32_t incr);
 int32_t access(char* fname);
+void ps();
+void kill(int32_t pid);
 #endif

@@ -57,13 +57,11 @@ FILE* fopen(const char *path, const char *mode)
       }
       else
       {
-         puts("I/O error - out of file descriptors");
          return NULL;
       }
    }
    else
    {
-      puts("I/O error - unable to open file");
       return NULL;
    }
 

@@ -23,6 +23,8 @@ int fgets(char *s, int size, FILE * fp)
 
        rcount = read(fp->fd, s, size-1);
 
+       if (rcount == 0)
+          return -1; 
        /* We see if there is a new line character and return only
         * till that point. We use lseek to correct the file offset
         * so that the next 'read' starts from the right place */

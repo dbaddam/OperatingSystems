@@ -322,5 +322,5 @@ void printf(const char *fmt, ...)
     va_end(arg);
     buffer[k]='\0';
     
-    write(1, buffer, MAX_BUFFER);
+    write(1, buffer, k);
 }

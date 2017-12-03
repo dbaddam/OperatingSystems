@@ -28,6 +28,10 @@ int closedirt(int fd)
 DIR* opendir(const char *path)
 {
    int fd_dir = opendirt(path, 1);
+   if(fd_dir == -1)
+   {
+      return NULL;
+   }
    dir[fd_dir].fd = fd_dir;
    //strncpy(dir[fd_dir].name, path, sbustrlen(path));
    return &dir[fd_dir];

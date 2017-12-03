@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
 
 int main(int argc, char* argv[], char* envp[])
 {
@@ -10,8 +11,14 @@ int main(int argc, char* argv[], char* envp[])
       exit(-1);
    }
 
-   puts("Sleep not implemented *******");
-   exit(-1);
-   sleep(10); 
+   int secs;
+   if (!atoi(argv[1], &secs))
+   {
+      puts("error :invalid number");
+      exit(-1);
+   }
+
+   if (secs > 0)
+      sleep(secs);
    return 0;
 }

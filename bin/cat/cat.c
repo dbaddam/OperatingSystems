@@ -11,21 +11,27 @@ int main(int argc, char *argv[], char* envp[])
 
    if (argc == 1)
    {
-      fputs("cat: file not specified", stdout);
+      fputs("error: file not specified\n", stdout);
       return -1;
    }
    else if (argc > 1)
    {
       fp = fopen(argv[1], "r");
    }
-   
-   while (fgets(buffer, MAX_BUFFER_SIZE, fp))
+
+   if (fp == NULL)
+   {
+      printf("error: file not exists\n");
+      exit(-1);
+   }
+
+   while (fgets(buffer, MAX_BUFFER_SIZE, fp) >= 0)
    {
       //fputs(buffer,  stdin);
 //      puts(buffer); 
       printf("%s", buffer); 
    }
    fclose(fp);
-   while(1);
+//   while(1);
    return 0;
 }
