@@ -367,7 +367,7 @@ void kprintf(const char *fmt, ...)
      temp2 = (char*)VIDEO_MEM_BASE+pos;  
   }
 
-//extern int isE0;
+extern int isE0;
 
   for(temp1 = buffer; *temp1; temp1 += 1,temp2 += 2,pos += 2)
   {
@@ -407,8 +407,8 @@ void kprintf(const char *fmt, ...)
          * and move pos back
          * E0 and 53 is the sequence for delete key press, only 53 is for . char press
          */
-  //      if(*temp1 == 0x0E || (isE0 == 1 && *temp1 == 0x53))
-        if(*temp1 == 0x0E)
+        if(*temp1 == 0x0E || (isE0 == 1 && *temp1 == 0x53))
+//        if(*temp1 == 0x0E)
         { 
            if(pos != 0 && (pos % width == 0))
            {
