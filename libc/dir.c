@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <dirent.h>
 
+static DIR dir[MAX_DIR];
 int opendirt(const char *pathname, int flags)
 {
    syscall2(opendirt, pathname, flags);

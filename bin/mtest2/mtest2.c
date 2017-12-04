@@ -7,7 +7,7 @@ int main(int argc, char* argv[], char* envp[])
 {
 
    int max = 2;
-   int lev = 3 * 1000;
+   int lev = 1 * 1000;
    char** p = (char**) malloc(lev*sizeof(char*));
 
    for (int i = 0;i < max;i++)

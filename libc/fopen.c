@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <unistd.h>
 
-FILE files[MAX_FILES];
+FILE _files_int[MAX_FILES];
 
 /* TODOKISHAN - For now fopen won't create a file if you open
  * in write mode. You can open only in READ mode
@@ -51,9 +51,9 @@ FILE* fopen(const char *path, const char *mode)
    {
       if (fd < MAX_FILES)
       {
-         files[fd].fd = fd;
-         files[fd].offset = 0;
-         return files + fd;
+         _files_int[fd].fd = fd;
+         _files_int[fd].offset = 0;
+         return _files_int + fd;
       }
       else
       {

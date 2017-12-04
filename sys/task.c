@@ -426,6 +426,7 @@ task* next_running_task()
    }
 
    ERROR("No running tasks..Should not be here");
+   return NULL;
 }
 
 void init_task_system()

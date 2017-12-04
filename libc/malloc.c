@@ -19,8 +19,8 @@ struct header{
 typedef struct header header;
 
 
-header* start = NULL;
-header* last = NULL;
+static header* start = NULL;
+static header* last = NULL;
 
 void* sbrk(unsigned int incr)
 {

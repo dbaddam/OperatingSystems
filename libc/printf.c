@@ -9,7 +9,7 @@ typedef int boolean;
 #define false 0
 #define MAX_BUFFER 4096
 
-char buffer[MAX_BUFFER];
+static char buffer[MAX_BUFFER];
 int stringlen(const char *a) 
 {
     int length = 0;
