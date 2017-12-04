@@ -3,6 +3,13 @@
 #include <unistd.h>
 #include <string.h>
 
+void lsleep(int secs)
+{
+    while(secs--)
+      for (int i = 0;i < 3000;i++)
+         for (int j = 0;j < 100000;j++);
+}
+
 int main(int argc, char* argv[], char* envp[])
 {
    if (argc == 1)
@@ -17,13 +24,18 @@ int main(int argc, char* argv[], char* envp[])
       printf("Invalid number\n");
       exit(-1);
    }
+
+
+   int pid = getpid();
+   int ppid = getppid();
+   printf("pid %d, ppid %d START\n", pid, ppid);
    for (int i = 0;i < count ;i++)
    {
-      sleep(5);
+      lsleep(1);
       int pid = getpid();
       int ppid = getppid();
-      printf("pid %d, ppid %d AWAKE\n", pid, ppid);
-      yield();
+      printf("pid %d, ppid %d cnt - %dAWAKE\n", pid, ppid, i);
+      //yield();
    } 
    return 0;
 }
