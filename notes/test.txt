@@ -1,0 +1,60 @@
+******cd,  
+cd .. 
+cd usr
+cd /usr
+cd ../bin
+cd ../usr
+cd ./dinesh
+cd ..
+cd dinesh
+cd /
+
+cd etc/abc
+cd /us
+cd /usr/din
+
+*******ls, 
+cd /
+ls
+ls /usr
+ls usr
+cd usr
+ls ../bin
+ls ..
+cd /usr
+ls din
+ls dinesh/abc
+ls /
+cd /
+ls ./usr
+
+cd /
+ls /us
+ls us
+
+*****executable
+cd /
+sleep 2
+bin/sleep 2
+cd usr
+sleep 2
+../bin/sleep 2
+cd /bin
+sleep 2
+./sleep 2
+
+
+
+cd /
+s 2
+sleepe 2
+bin/s 2
+bin/sleepe 2
+cd /bin
+sl 2
+sleepe 2
+./sl 2
+./sleepe 2
+
+
+

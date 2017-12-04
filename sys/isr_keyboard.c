@@ -7,6 +7,7 @@
 int shift = 0;
 int ctrl = 0;
 int lines = 0;
+//int isE0 = 0;
 
 char ui_input[MAX_BUFFER] = {'\n'};
 int p_index=1;  // The index of character the producer will write to.
@@ -50,7 +51,7 @@ void printChar(char c)
 
    // if user presses a backspace, the previously entered char 
    // in the buffer shall be ignored
-   if(c==0x0E)
+   if(c==0x0E || c == 0x53)
    {
       if(p_index == 0)
       {
@@ -182,23 +183,37 @@ void isr_keyboard()
        {   0,0   } ,
        { ' ',' ' } ,
    };
+  /*    // if recieved an E0 hex value
+      if(c == 0xE0)
+      {
+         if(isE0 == 0)
+         {
+            isE0 = 1; 
+         }
+         else
+         {
+            isE0 = 0;
+         }
+      }*/
+      
       // if backspace is pressed, we go ahead and send that to kprintf
       // kprintf handles that backspace
       if(c == 0x0E)
+    //  if(c == 0x0E || c == 0x53)
       {
          //kprintf("backsapce!");
          printChar(c);
       }
 
       //if control key is pressed, set ctrl variable
-      if(c == 0x1D || c == 0xE0)
+      if(c == 0x1D)
       {
          ctrl = 1;
          goto end;         
       } 
 
       //if control key is released, make ctrl 0
-      if(c == 0xE0 || c == 0x9D)
+      if(c == 0x9D)
       {
          ctrl = 0;
          goto end;         

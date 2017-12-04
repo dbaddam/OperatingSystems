@@ -22,7 +22,7 @@
            dirp = opendir(path); 
            if (dirp == NULL)
            {
-              puts("Given path might not be a correct one!");
+              puts("error - path is not correct");
               //write(1, "something went wrong in getting dirp pointer!", 256);
               return -1;
            }

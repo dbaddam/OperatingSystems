@@ -414,10 +414,17 @@ int getFileFromTarfs(char *unsanitized_filename, char **file_start_address)
 /* checks if given name is directory or not 
  * returns 1 on success and -1 on failure
  *
- * NOTE: The filename as input should already be sanitized one
+ * NOTE: The filename as input should already be sanitized one 
+ *       which has the pwd prefixed already, evnthough if its 
+ *       empty, that means it is a root directory change
  */
 int is_directory(char *dirname)
 {
+   if(*dirname == '\0')
+   {
+      // this is a special case as it is root directory
+      return 1;
+   }
    if(*dirname == '/' && *(dirname+1) == '\0')
    {
       // this is a special case as it is root directory
@@ -437,18 +444,28 @@ int is_directory(char *dirname)
          break;
       }
       unsigned int filesize = oct2bin((unsigned char *)header->size, 11);   
-      if(sbustrncmp(header->name, dirname, sbustrlen(dirname)))
-     // if(sbustrcmp(header->name, dirname)==0)
-      {   
-         if((char)(header->typeflag[0]) == '5')
-         {
-  //          _free_page(dirname);
-            return 1;
-         }
-      }   
+      int len = sbustrlen(header->name);
+      if(header->name[len-1] == '/')
+      {
+    //     if(sbustrncmp(header->name, dirname, sbustrlen(dirname))) 
+         char *dir = (char*) _get_page();
+         strncpy(dir, dirname, sbustrlen(dirname)+1);
+         int d = sbustrlen(dir);
+         dir[d] = '/';
+         dir[d+1] = '\0';
+
+         if(sbustrcmp(header->name, dir)==0)
+         {   
+            if((char)(header->typeflag[0]) == '5')
+            {
+               _free_page(dir);
+               return 1;
+            }
+         }   
+         _free_page(dir); 
+      }
       addr += (((filesize+511)/512)+1)*512;
    }   
- //  _free_page(dirname);
    return -1;
 }
 
@@ -486,60 +503,6 @@ int is_file(char *filename)
    return -1;
 }
 
-/* This function lists all the files/directories present in the given directory
- *
- * NOTE: This function may not work anymore as many changes are made later, IGNORE 
- */
-void read_directory(char *unsanitized_dirname)
-{
-   char *dirname = (char*) _get_page();
-   sanitize_path(unsanitized_dirname, dirname);
-   if(is_directory(dirname)==-1)
-   {
-      kprintf("%s is not a directory name\n",dirname);
-      _free_page(dirname);
-      return;
-   }
-   uint64_t addr = (uint64_t) &_binary_tarfs_start;
-   int i=0;
-   kprintf("found below files for dir=%s\n",dirname);
-   for(i=0;;i++)
-   {   
-      struct posix_header_ustar *header;
-      header = (struct posix_header_ustar *)addr;
-      if(header->name[0]=='\0')
-      {   
-         break;
-      }
-      unsigned int filesize = oct2bin((unsigned char *)header->size, 11);
-      char *dircontent = (char*) _get_page();
-      if(sbustrstr(header->name, dirname, dircontent)==1)
-      {   
-         char *content = (char*) _get_page();
-         sbustr(dircontent, sbustrlen(dirname)+1, sbustrlen(dircontent)-1, content);
-         if(sbustrlen(content)>0)
-         {
-            int index = contains(content,'/');
-            if(index != -1)
-            {
-               char *content1 = (char*) _get_page();
-               sbustr(content, 0, index-1, content1);
-               kprintf("%s\n",content1);
-               _free_page(content1);
-            }else
-            {
-               kprintf("%s\n",content);
-            }
-         }
-         _free_page(content);
-      }
-      _free_page(dircontent);
-      addr += (((filesize+511)/512)+1)*512;
-   }   
-   _free_page(dirname);
-   return;
-}
-
 /* This function returns the directories/files in the root
  * 
  */
@@ -564,6 +527,8 @@ int readdir_tarfs_root(int fd, char *buf)
          {
             header->name[index] = '\0';
             strncpy(buf, header->name, sbustrlen(header->name)+1);
+            header->name[index] = '/';
+            header->name[index+1] = '\0';
             addr += (((filesize+511)/512)+1)*512;
             t->file[fd].offset = addr;
             return 1;
@@ -595,16 +560,10 @@ uint32_t readdir_tarfs(uint32_t fd, char *buf)
    strncpy(dirname, (char *)t->file[fd].name, sbustrlen((char *)t->file[fd].name)+1);
    
    // if dirname is root, just call readdir root function
-   if(*dirname == '/' && *(dirname+1) == '\0')
+   if((*dirname == '/' && *(dirname+1) == '\0') || *dirname == '\0')
    {
       int r = readdir_tarfs_root(fd, buf);
       return (r==1)?1:-1;   
-   } 
-   if(is_directory(dirname)==-1)
-   {
-      kprintf("%s is not a directory name\n",dirname);
-      _free_page(dirname);
-      return -1;
    }
    uint64_t addr = t->file[fd].offset;
    int i;
@@ -842,8 +801,6 @@ int closedir_tarfs(int fd)
 void init_tarfs()
 {
 
-   kprintf("First file name in tarfs = %s\n",&_binary_tarfs_start);   
-   //struct posix_header_ustar headers[32];//some number of headers
    uint64_t addr = (uint64_t) &_binary_tarfs_start;
    unsigned int i=0;
    for(i=0;;i++)
@@ -854,13 +811,15 @@ void init_tarfs()
       {
          break;
       }
-      kprintf("filename = %s \n",header->name);
+   //   kprintf("filename = %s \n",header->name);
       unsigned int filesize = oct2bin((unsigned char *)header->size, 11);
  //     kprintf("filesize = %d,",filesize);
-      // headers[i] = *header;
       addr += (((filesize+511)/512)+1)*512;
  //     kprintf("addr value = %p\n",addr);
    }
+   //int s = is_directory("us");
+   //int s = is_directory("us");
+   //kprintf("s = %d\n",s);
    /*
    char *filecontent;
    int fsize = getFileFromTarfs("bin/sbush", &filecontent);
@@ -903,4 +862,5 @@ void init_tarfs()
    }
    closedir_tarfs(fd); 
 */
+  // is_directory("us");
 }
