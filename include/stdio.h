@@ -18,11 +18,11 @@ struct FILE
 
 #define MAX_FILES 1000
 typedef struct FILE FILE;
-extern FILE files[MAX_FILES];
+extern FILE _files_int[MAX_FILES];
 
-#define stdin   (files+0)
-#define stdout  (files+1)
-#define stderr  (files+2)
+#define stdin   (_files_int+0)
+#define stdout  (_files_int+1)
+#define stderr  (_files_int+2)
 
 #define O_RDONLY     0
 #define O_WRONLY     1

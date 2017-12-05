@@ -218,13 +218,13 @@ int64_t load_process(char* filename)
 // Spawns the initial shell
 void start_sbush()
 {
-   char* argv[] = {"bin/sbush", 0};
-   char* envp[] = {"PATH=/bin", "HOME=/", 0};
+   char* argv[] = {"/bin/init", 0};
+   char* envp[] = {0};
 
    //mem_info();
    create_first_user_task(NULL);
-   kprintf("Starting sbush....\n");
-   execve("bin/sbush", argv, envp);
+   kprintf("Welcome to SBUnix!\n");
+   execve("/bin/init", argv, envp);
 }
 
 uint32_t first_load = 1;
@@ -426,6 +426,7 @@ task* next_running_task()
    }
 
    ERROR("No running tasks..Should not be here");
+   return NULL;
 }
 
 void init_task_system()
@@ -482,19 +483,17 @@ void schedule()
 
 void copy_vmas(vma* dst, vma* src)
 {
-   vma *c;
-   vma *d_c = dst;
-   while (src != NULL)
+   // Copy the dummy vma first
+   *dst = *src;
+
+   while (src->next != NULL)
    {
-      c = (vma*)_get_page();
-      c->start = src->start;
-      c->end = src->end; 
-      d_c->next = c;
-      d_c = d_c->next;
+      dst->next = (vma*)_get_page();
       src = src->next;
+      dst = dst->next;
+      *dst = *src;
    }
 
-   d_c->next = NULL;
 }
 
 // add_vma inserts in a sorted order
@@ -752,7 +751,6 @@ int32_t chdir(char* path)
       return 0;
    }
 
-   /* TODOKISHAN - Add / at the beginning */
    sanitize_path(path,spath+1);
    if (is_directory(spath+1) > 0)
    {
@@ -868,25 +866,25 @@ void ps()
 {
    int i;
 
-   kprintf("PID  PPID  STATE  CMD\n");
-   for (i = 0;i < MAX_PROCESSES;i++)
+   kprintf("PID  PPID   STATE    CMD\n");
+   for (i = 1;i < MAX_PROCESSES;i++)
    {
       if (tasks[i].state != AVAIL_STATE)
       {
-         kprintf("%d %d %s %s\n", tasks[i].pid, tasks[i].ppid, state_to_str(tasks[i].state), tasks[i].name);
+         kprintf("%d     %d     %s  %s\n", tasks[i].pid, tasks[i].ppid, state_to_str(tasks[i].state), tasks[i].name);
       }
    }
 }
 
 void kill(int32_t pid)
 {
-   if (pid == 0 || pid == 1)
+   if (pid == 1)
    {
       kprintf("forever running process\n");
       return;
    }
 
-   if (pid < 0 || pid >= MAX_PROCESSES ||
+   if (pid <= 0 || pid >= MAX_PROCESSES ||
        tasks[pid].state == AVAIL_STATE)
    {
       kprintf("No such process - %d\n", pid);

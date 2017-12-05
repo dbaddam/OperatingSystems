@@ -1,5 +1,12 @@
 #include <sys/os.h>
 
+void clr_page(void* ptr)
+{
+   int i;
+   uint64_t* p = (uint64_t*)ptr;
+   for (i = 0;i < PAGE_SIZE/8;i++,p++)
+       *p = 0;
+}
 
 void add_single_page(uint64_t addr)
 {
@@ -8,6 +15,8 @@ void add_single_page(uint64_t addr)
                       PHYS_ADDR((uint64_t)page), 
                       (uint64_t*)VIRT_ADDR((uint64_t)get_cur_cr3()),
                       PG_P|PG_RW|PG_U);
+
+   clr_page((uint64_t*)page);
 }
 
 void flush_tlb()
@@ -71,7 +80,7 @@ void isr_page_fault(uint64_t eno, uint64_t cr2)
             }
             else
             {
-                ERROR("isr_page_fault eno - %p, cr2 - %p\n");
+                ERROR("Segmentation fault\n");
             }
          }
          else
@@ -111,7 +120,6 @@ void isr_page_fault(uint64_t eno, uint64_t cr2)
             {
                 /* malloc or stack */
                 add_single_page(vaddr);
-                //ERROR("malloc case");
             }
          }
          flush_tlb();
@@ -120,21 +128,9 @@ void isr_page_fault(uint64_t eno, uint64_t cr2)
       //lastp = p;
       p = p->next;
    }
-/*
-   // This is the stack vma
-   // TODOKISHAN - Change this properly
-   if (p == NULL && cr2 > lastp->start - PAGE_SIZE)
-   {
-      add_single_page(cr2);
-      //kprintf("Adding stack page\n");
-      flush_tlb();
-      lastp->start -= PAGE_SIZE;  // Increase the stack size
-      return; 
-   }
-*/
-   //TODOKISHAN REMOVE THIS
-   print_vmas();
-   kprintf("Segmentation fault - eno - %p, vaddr - %p\n",eno,cr2);
+
+   //print_vmas();
+   kprintf("Segmentation fault\n");
    exit(-1);
    //ERROR("Invalid Page fault erno - %p, cr2 - %p", eno, cr2);
 }

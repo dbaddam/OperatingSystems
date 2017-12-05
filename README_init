@@ -21,3 +21,4 @@ gdb ./kernel
 
 At the (gdb) prompt, connect with:
 target remote localhost:9999
+add-symbol-file rootfs/bin/sbush 0x4000e8

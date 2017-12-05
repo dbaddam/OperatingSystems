@@ -23,7 +23,6 @@ struct DIR
 
 #define MAX_DIR 64
 typedef struct DIR DIR;
-DIR dir[MAX_DIR];
 
 
 
