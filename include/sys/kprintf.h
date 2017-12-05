@@ -13,7 +13,6 @@ void intTOstring(int number, char *p, int base);
 void unsignedLongTOstring(unsigned long number, char *p, int base);
 
 
-/* TODOKISHAN - We should exit() instead of a while loop here */
 #define ERROR(...) \
 do{ \
 kprintf("ERROR : " __VA_ARGS__); \

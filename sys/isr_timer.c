@@ -42,7 +42,7 @@ void isr_timer()
 
    if (subsec == 0)
       decrement_sleep();
-   if (subsec%9 == 0)
+   if (subsec%2 == 0)
       schedule();
    
 }

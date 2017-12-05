@@ -373,7 +373,6 @@ void malloc_test()
     printf("c3 - %p\n", c3);
     print_mem();
     
-    while(1);
 }
 int glob = 1;
 int main(int argc, char *argv[], char *envp[])
@@ -450,7 +449,6 @@ int main(int argc, char *argv[], char *envp[])
       puts("Before function call\n");
       fcall(2);
       puts("After function call\n");
-      while(1);
    }
    //rec(NULL);
    return 0;

@@ -4,7 +4,6 @@
 #include <unistd.h>
 #include <sys/wait.h>
 
-//TODOKISHAN - Bring back these sizes
 
 #define MAX_BUFFER_SIZE    1024
 #define MAX_ARG_COUNT      100
@@ -12,13 +11,6 @@
 #define MAX_PIPE_COUNT     100
 #define MAX_PIPE_CMD_SIZE  MAX_ARG_SIZE
 
-/*
-#define MAX_BUFFER_SIZE    256
-#define MAX_ARG_COUNT      10
-#define MAX_ARG_SIZE       30
-#define MAX_PIPE_COUNT     1
-#define MAX_PIPE_CMD_SIZE  MAX_ARG_SIZE
-*/
 
 void sbuprintmsg(char *str)
 {
@@ -246,7 +238,7 @@ int runcmd(char *buf)
       char *args[1][MAX_ARG_COUNT];
       char  argscontent[1][MAX_ARG_COUNT][MAX_ARG_SIZE];
       int   fd[MAX_PIPE_COUNT-1][2];
-      int   background = 0;               // TODOKISHAN : background implementation 
+      int   background = 0;             
       int   pid = 0;
       int   status;
       int   argcount;
@@ -339,117 +331,10 @@ int runcmd(char *buf)
 
          if (!background)
          {
-            // TODOKISHAN Ideally we should wait for the pids, otherwise 
-             // previous background process can interfere with wait 
             for (i = 0;i < pipeargcount;i++)
                waitpid(pid, &status);
          }
       }
-      /*
-      char  pipeargs[MAX_PIPE_COUNT][MAX_PIPE_CMD_SIZE];
-      char *args[MAX_PIPE_COUNT][MAX_ARG_COUNT];
-      char  argscontent[MAX_PIPE_COUNT][MAX_ARG_COUNT][MAX_ARG_SIZE];
-      int   fd[MAX_PIPE_COUNT-1][2];
-      int   background = 0;               // TODOKISHAN : background implementation 
-      int   pid = 0;
-      int   status;
-      int   argcount;
-      int   pipeargcount;                     // # of pipes + 1 
-      int   i, j;
-
-      pipeargcount = sbusplit(c, pipeargs, '|');
-
-      for (i = 0;i < pipeargcount;i++)
-      { 
-         argcount = sbusplit(pipeargs[i], argscontent[i],' ');
-         for (j = 0;j < argcount;j++)
-            args[i][j] = argscontent[i][j];
-
-         // If the command needs be run in the background, the last argument
-         // * should be '&' and we are not supposed to pass that to execvp*()
-         // * If '&' is not set, we make the LAST argument as NULL. 
-         if (pipeargcount == 1 &&   // no pipes 
-             argcount > 0 && 
-             iscmd(argscontent[i][argcount-1], "&"))
-         {
-            background = 1;
-            args[i][argcount-1] = NULL;
-         }
-         else
-         {
-            args[i][argcount] = NULL;
-         }
-      }
-
-      // We don't support pipe and background task in the same command 
-      if (pipeargcount > 1 && background)
-      {
-         sbuerr("error - invalid pipe and background combination");
-         return 0;
-      }
-
-      for (i = 0;i < pipeargcount - 1;i++)
-      {
-         if (pipe(fd[i]))
-         {
-            sbuerr("error - invalid pipe and background combination");
-            return 0;
-         }
-      }
-
-      for (i = 0;i < pipeargcount;i++)
-      {
-         pid = fork();
-         if (pid == 0)
-         {
-            if (i > 0)
-            {
-               if (dup2(fd[i-1][0], 0) < 0)
-                  sbuerr("error - dup2 failed");
-            }
-
-            if (i < pipeargcount-1)
-            {
-               if (dup2(fd[i][1], 1) < 0)
-                  sbuerr("error - dup2 failed");
-            }
-
-            for (j = 0;j < pipeargcount - 1;j++)
-            {
-               close(fd[j][0]);
-               close(fd[j][1]);
-            }
-            if (execvp(args[i][0], args[i]))
-            {
-               sbuerr("error - invalid command/unable to execute");
-            }
- 
-            exit(1);
-         }
-      }
-
-      if (pid < 0)
-      {
-         sbuerr("error - fork failed");
-         return 0;
-      }
-      else if (pid > 0)
-      {
-         for (i = 0;i < pipeargcount - 1;i++)
-         {
-            close(fd[i][0]);
-            close(fd[i][1]);
-         }
-
-         if (!background)
-         {
-            // TODOKISHAN Ideally we should wait for the pids, otherwise 
-             // previous background process can interfere with wait 
-            for (i = 0;i < pipeargcount;i++)
-               wait(&status);
-         }
-      }
-      */
    }
 
    return 0;

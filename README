@@ -1,3 +1,12 @@
--wp3 works on qemu completely.
--On the lenovo machines, we were able to detect AHCI controller but not
- SATA drives.
+SBUnix - Preemptive multi-tasking OS
+
+Kishan Nerella
+Dinesh Baddam
+
+Features :
+- COW fork()
+- Autogrowing stack
+- Graceful SEGV handling
+
+Available binaries :
+  sbush, echo, sleep, cat, ls, kill -9, ps

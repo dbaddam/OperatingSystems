@@ -1,9 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-//TODOKISHAN maxe this buffer
-//#define MAX_BUFFER_SIZE 1024
-#define MAX_BUFFER_SIZE 5
+#define MAX_BUFFER_SIZE 1024
+//#define MAX_BUFFER_SIZE 5
 
 
 int main(int argc, char *argv[], char* envp[])

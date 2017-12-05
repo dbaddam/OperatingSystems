@@ -32,7 +32,7 @@ void init_mem(uint32_t *modulep, void* kernmem, void *physbase, void *physfree){
 
   for(smap = (struct smap_t*)(modulep+2); smap < (struct smap_t*)((char*)modulep+modulep[1]+2*4); ++smap) {
     if (smap->type == 1 /* memory */ && smap->length != 0) {
-      kprintf("Available Physical Memory [%p-%p]\n", smap->base, smap->base + smap->length);
+      //kprintf("Available Physical Memory [%p-%p]\n", smap->base, smap->base + smap->length);
 
       if (smap->base < MAX_RAM && smap->base + smap->length >= MAX_RAM)
       {
@@ -51,8 +51,8 @@ void init_mem(uint32_t *modulep, void* kernmem, void *physbase, void *physfree){
 
   /* Making the last addressable memory 4K aligned*/
   last_physaddr = (last_access_mem/PAGE_SIZE)*PAGE_SIZE;
-  kprintf("physfree %p\n", (uint64_t)physfree);
-  kprintf("Highest physaddr %p\n", (uint64_t)last_physaddr);
+  //kprintf("physfree %p\n", (uint64_t)physfree);
+  //kprintf("Highest physaddr %p\n", (uint64_t)last_physaddr);
 
   /* The page descriptors start at start_pd*/ 
   start_pd = (mem_pd*)(KERNEL_BASE + (uint64_t)physfree);
@@ -120,12 +120,12 @@ void init_mem(uint32_t *modulep, void* kernmem, void *physbase, void *physfree){
   head_freepd = start_pd[kernel_pages-1].next;
 
   //kprintf("invalid_count - %d, next_zero_count - %d\n", invalid_count, next_zero_count);
-  kprintf("page descriptor entries - %d\n", pd_entries);
-  kprintf("kernmem - %p\n", kernmem);
-  kprintf("pd pages - %d\n", pd_pages);
-  kprintf("kernel pages - %d\n", kernel_pages);
-  kprintf("head_freepd - %p\n", head_freepd);
-  kprintf("head_freepd index - %d\n", (head_freepd-start_pd));
+  //kprintf("page descriptor entries - %d\n", pd_entries);
+  //kprintf("kernmem - %p\n", kernmem);
+  //kprintf("pd pages - %d\n", pd_pages);
+  //kprintf("kernel pages - %d\n", kernel_pages);
+  //kprintf("head_freepd - %p\n", head_freepd);
+  //kprintf("head_freepd index - %d\n", (head_freepd-start_pd));
 
   uint64_t* pml4 = (uint64_t*) _get_page();
   kernel_pml4 = pml4;
@@ -136,7 +136,7 @@ void init_mem(uint32_t *modulep, void* kernmem, void *physbase, void *physfree){
                      //KERNEL_BASE + (1 << 30) - 1,
                      //KERNEL_BASE + (kernel_pages*PAGE_SIZE) + (100*PAGE_SIZE) - 1,
                      0, pml4, PG_U|PG_P|PG_RW);
-  kprintf("Done creating page tables\n");
+  //kprintf("Done creating page tables\n");
    __asm__ __volatile__("movq %0, %%cr3"
                          : 
                          : "r"(PHYS_ADDR((uint64_t)(pml4))));
@@ -164,7 +164,7 @@ void* _get_page_phys()
 
    //kprintf("id - %d,",(int)index);
    if (head_freepd == 0)
-      ERROR("Out of Memory head_freepd - %p\n", head_freepd);
+      ERROR("Out of Memory\n");
 
    return (void*)ptr; 
 }

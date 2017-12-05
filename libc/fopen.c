@@ -4,10 +4,6 @@
 
 FILE _files_int[MAX_FILES];
 
-/* TODOKISHAN - For now fopen won't create a file if you open
- * in write mode. You can open only in READ mode
- * for now. We may have add additional functionality
- * as necessary in the future. */
 FILE* fopen(const char *path, const char *mode)
 {
 
