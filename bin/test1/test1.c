@@ -32,9 +32,9 @@ int main(int argc, char* argv[], char* envp[])
    for (int i = 0;i < count ;i++)
    {
       lsleep(1);
-      int pid = getpid();
-      int ppid = getppid();
-      printf("pid %d, ppid %d cnt - %dAWAKE\n", pid, ppid, i);
+      //int pid = getpid();
+      //int ppid = getppid();
+      //printf("pid %d, ppid %d cnt - %dAWAKE\n", pid, ppid, i);
       //yield();
    } 
    return 0;

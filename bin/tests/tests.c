@@ -16,7 +16,7 @@ int main(int argc, char* argv[], char* envp[])
       int pid2 = fork();
       if (pid2 == 0)
       {
-         char* argv[10] = {"/bin/test1", "10", 0};
+         char* argv[10] = {"/bin/test1", "20", 0};
          execve("/bin/test1", argv, envp);
       }
       else
