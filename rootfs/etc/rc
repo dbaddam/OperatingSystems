@@ -1,1 +1,3 @@
 #! /bin/sbush
+export PATH=/bin
+/bin/sbush

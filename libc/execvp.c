@@ -6,7 +6,7 @@
 
 #define MAX_FILE_SIZE 1024
 
-int execvp(const char *filename, char *const argv[])
+int execvpe(const char *filename, char *const argv[], char *const envp[])
 {
    char  file[MAX_FILE_SIZE];
    char *path = getenv("PATH");
@@ -16,12 +16,15 @@ int execvp(const char *filename, char *const argv[])
    for (i = 0; filename[i];i++)
    {
        if (filename[i] == '/')
-          return execve(filename, argv, _sbush_env);
+          return execve(filename, argv, envp);
    }
 
    /* If the file is in this directory, execute now */
    if (!access(filename, F_OK))
-      return execve(filename, argv, _sbush_env);
+      return execve(filename, argv, envp);
+
+   if (!path)
+      return -1;
 
    while (*path)
    {
@@ -47,5 +50,5 @@ int execvp(const char *filename, char *const argv[])
       path += (keyend-keystart)+1;
    }
 
-   return execve(file, argv, _sbush_env);
+   return execve(file, argv, envp);
 }

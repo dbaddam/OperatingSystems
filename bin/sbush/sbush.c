@@ -147,7 +147,7 @@ int runcmd(char *buf)
       return 0;
    }
 
-   if (iscmd(c, "#!")) 
+   if (iscmd(c, "#")) 
    {
       return 0;
    }

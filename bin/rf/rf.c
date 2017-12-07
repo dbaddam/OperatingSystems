@@ -52,5 +52,9 @@ int main(int argc, char* argv[], char* envp[])
       fputs(str2, stdout);
    }
 //   fclose(fp2);
+
+   fclose(fp);
+   fclose(fp2);
+   fclose(fp1);
    return 0;
 }

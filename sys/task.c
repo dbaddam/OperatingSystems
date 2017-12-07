@@ -453,11 +453,13 @@ void init_task_system()
    add_run_queue(t);
 
    /* Add forever wait task */
+/*
    pid = get_new_pid();
    t = &tasks[pid];
    create_kernel_task(t, wait_forever);
    strncpy(t->name, "wait_forever", MAX_FILE_NAME_SIZE);
    add_run_queue(t);
+*/
    cur_task = t;
 }
 

@@ -10,3 +10,6 @@ Features :
 
 Available binaries :
   sbush, echo, sleep, cat, ls, kill -9, ps
+
+Like libc stores the environment variable in __environ as defined in
+man page, we are storing it in _sbush_env

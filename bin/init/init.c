@@ -10,11 +10,10 @@ int main(int argc, char* argv[], char* envp[])
    }
    else
    {
-      wait(NULL);
+      while(1)
+         wait(NULL);
    }
 
-   char* arg[] = {"/bin/sbush", 0};
-   char* env[] = {"PATH=/bin", 0};
-   execve("/bin/sbush", arg, env);
+   while(1);
    return 0;
 }
