@@ -355,24 +355,63 @@ void fcall(int n)
 
 void malloc_test()
 {
-    char* c1, *c2, *c3; 
+    char *c1;
+  //  char *c2;
+   // char *c3; 
     c1 = malloc(10);
     *c1 = 45;
-    print_mem();
+    printf("1");
+    print_mem();printf("\n");
+    int a =1;
+    int b=0; 
+    int z = a/b;
+
+   while (1);
+    printf("%d\n",z);
+    printf("hey bamardii!!!\n");
+  //printf("%c\n",*(c1+4097));   
+   
+/*
     c2 = malloc(47);
+    print_mem();printf("\n");
+
     c3 = malloc(56);
-    printf("c2 - %p\n", c2);
+    print_mem();printf("\n");
+    //printf("c2 - %p\n", c2);
     free(c2);
-    print_mem();
+    print_mem();printf("\n");
+
     c2 = malloc(47);
-    printf("c2 - %p\n", c2);
+    print_mem();printf("\n");
+    //printf("c2 - %p\n", c2);
     free(c3);
+    print_mem();printf("\n");
+
     c3 = malloc(4096);
+    print_mem();printf("\n");
+
     free(c3);
+
+
     c3 = malloc(100);
-    printf("c3 - %p\n", c3);
-    print_mem();
+    //printf("c3 - %p\n", c3);
+    print_mem();printf("\n");
     
+    char *c4;
+    c4 = malloc(33);
+    print_mem();printf("\n");
+    free(c4);
+    print_mem();printf("\n");
+    
+    free(c3);
+    print_mem();printf("\n");
+
+    char *c5;
+    c5 = malloc(60);
+    print_mem();printf("\n");
+    free(c5);
+    print_mem();printf("\n");
+*/
 }
 int glob = 1;
 int main(int argc, char *argv[], char *envp[])
@@ -421,10 +460,10 @@ int main(int argc, char *argv[], char *envp[])
 */
       
       execve("/bin/cat", argv, envp);
-      puts("After ls");
+  //    puts("After ls");
       //execve("bin/inffork", argv, envp);
       execve("abc", argv, envp);
-      puts("execve failed");
+    //  puts("execve failed");
       glob++;
    /*   if (fork() == 0)
       {
@@ -442,14 +481,14 @@ int main(int argc, char *argv[], char *envp[])
    }
    else
    {
-      int status;
-      write (1, "Parent", 6);
+   //   int status;
+      /*write (1, "Parent", 6);
       wait(&status);
       write (1, "P A wait", 8);
       puts("Before function call\n");
       fcall(2);
       puts("After function call\n");
-   }
+  */ }
    //rec(NULL);
    return 0;
 }

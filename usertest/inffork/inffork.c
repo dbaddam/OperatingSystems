@@ -67,28 +67,36 @@ void fn(int n)
 int main(int argc, char* argv[], char* envp[])
 {
    int i;
-   for (i = 0;i  < 1000000;i++)
+   for (i = 0;i  < 100000;i++)
    {
-       if (fork() == 0)
+       int pid = fork();
+       if (pid == 0)
        {
           char c[10];
-          fn(i);
-          puts("Inffork Child");
-          convert(i, c); 
-          puts(c);
-          //sleep(1);
-          puts("Inffork Child");
+          //fn(i);
+
+          if (i%100 == 0)
+          {
+             puts("Inffork Child");
+             convert(i, c); 
+             puts(c);
+             //sleep(1);
+             puts("Inffork Child");
+          }
           exit(i+100);
        }else
        {
           char c[10];
-          puts("Inffork Parent");
           int status;
-          wait(&status);
-          convert(status, c); 
-          //sleep(1);
-          puts(c);
-          puts("Inffork Status");
+          waitpid(pid, &status);
+          if (i%100 == 0)
+          {
+             puts("Inffork Parent");
+             convert(status, c); 
+             //sleep(1);
+             puts(c);
+             puts("Inffork Status");
+          }
        }
    }
    return 0;

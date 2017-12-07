@@ -60,7 +60,7 @@ header* bump_heap(unsigned int size)
 
 void split(header* p, unsigned int size)
 {
-   header* newblk = (header*)(((char*) p) + size);
+   header* newblk = (header*)(((char*) p) + size + sizeof(header));
    newblk->size = p->size - size - sizeof(header);
    newblk->next = p->next;
    newblk->free = 1;
