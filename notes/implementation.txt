@@ -1,3 +1,3 @@
 1. We don't have error handling whatsoever.
-2. chdir, getcwd relative paths or invalid paths.. Go through tarfs?
-3. foreground process capability for read stdin
+2. foreground process capability for read stdin
+3. Remove our tests in the submission

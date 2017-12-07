@@ -3,8 +3,8 @@
 #include <unistd.h>
 #include <string.h>
 
-int glob1 = 1;
-int glob2 = 2;
+int glob1 = 23;
+int glob2 = 27;
 
 int main(int argc, char* argv[], char* envp[])
 {
@@ -19,7 +19,7 @@ int main(int argc, char* argv[], char* envp[])
 
    int xpid = wait(NULL);
 
-   printf("glob1 - %d, glob2 - %d, xpid - %d\n", glob1, glob2, xpid);
+   printf("glob1 - %d, glob2 - %d, xpid - %d\n", glob1*glob2, glob2, xpid);
    
    return 0;
 }
