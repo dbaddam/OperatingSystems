@@ -9,7 +9,6 @@ uint64_t subsec = 0;
 void isr_timer()
 {
 
-   //pic_irq_set_mask(TIMER_IRQ | KEYBOARD_IRQ);
    subsec++;
    if (subsec == 18)
    {
@@ -36,12 +35,12 @@ void isr_timer()
       }
 
    }
-   //pic_irq_clear_mask(TIMER_IRQ | KEYBOARD_IRQ);
-   //pic_irq_clear_mask(TIMER_IRQ);
    picack(TIMER_IRQ);
 
    if (subsec == 0)
       decrement_sleep();
+
+   /* Pre-emptive scheduling - every 38 ms */
    if (subsec%2 == 0)
       schedule();
    

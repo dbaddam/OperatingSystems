@@ -41,41 +41,34 @@
 .endm
 
 _isr_keyboard:
-#   cld
    cli
    pushRegs
 
    call isr_keyboard
 
    popRegs
-#   sti
    iretq
 
 _isr_timer_init:
-#   cld
    cli
    pushRegs
 
    call isr_timer_init
 
    popRegs
-#   sti
    retq
   
 
 _isr_timer:
-#   cld
    cli
    pushRegs
 
    call isr_timer
 
    popRegs
-#   sti
    iretq
 
 _isr_page_fault:
-#   cld
    cli
    pushRegs
 
@@ -85,5 +78,4 @@ _isr_page_fault:
 
    popRegs
    add $8, %rsp  #error code gets add to the stack
-#   sti
    iretq

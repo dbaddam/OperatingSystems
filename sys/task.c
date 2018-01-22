@@ -91,21 +91,6 @@ void create_first_user_task(void (*main)())
                         :
                         : "r"(t->reg_cr3));
    strcpy(t->pwd, "/");
-   /* 
-   for (i = 0;i < INITIAL_STACK_PAGES;i++)
-   { 
-      uint64_t page = (uint64_t )_get_page(); 
-      //t->ustack = (uint8_t*) USER_STACK_TOP;
-      create_page_tables(USER_STACK_TOP - (i+1)*PAGE_SIZE, 
-                         USER_STACK_TOP + i*PAGE_SIZE - 1,
-                         PHYS_ADDR((uint64_t)page), 
-                         (uint64_t*)VIRT_ADDR(t->reg_cr3),
-                         PG_P|PG_RW|PG_U);
-   }
-
-   t->reg_ursp = ((uint64_t)USER_STACK_TOP)- 40;
-   add_vma(USER_STACK_TOP - INITIAL_STACK_PAGES*PAGE_SIZE, INITIAL_STACK_PAGES*PAGE_SIZE);
-   */
 }
 
 // Idle thread
@@ -452,14 +437,6 @@ void init_task_system()
    strncpy(t->name, "idle", MAX_FILE_NAME_SIZE);
    add_run_queue(t);
 
-   /* Add forever wait task */
-/*
-   pid = get_new_pid();
-   t = &tasks[pid];
-   create_kernel_task(t, wait_forever);
-   strncpy(t->name, "wait_forever", MAX_FILE_NAME_SIZE);
-   add_run_queue(t);
-*/
    cur_task = t;
 }
 
@@ -468,8 +445,6 @@ void schedule()
 {
    task* me = cur_task;
    task* to;
-
-   //sleep(1);
 
    to = next_running_task();
    cur_task = to;
@@ -633,14 +608,10 @@ void update_children_pid(uint32_t pid)
        if (tasks[i].state != AVAIL_STATE &&
            tasks[i].ppid == pid)
        {
-          //tasks[i].state = ZOMBIE_STATE;
           tasks[i].ppid = TOP_PROCESS;
-          //mark_children_zombie(i);
        }
    }
      
-   // Does this make sense here?
-   //add_run_queue(&tasks[TOP_PROCESS]); 
 }
 
 void exit_int(task*t, uint32_t status)

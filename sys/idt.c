@@ -74,6 +74,8 @@ void init_idt()
                          : "r"((uint64_t)(&idtr)));
 }
 
+
+/* Registers interrupt handler */
 void register_irq(unsigned char num, uint64_t fp)
 {
     idt[num].offset_1 = (((uint64_t)fp) & (0x000000000000FFFF));
@@ -85,6 +87,7 @@ void register_irq(unsigned char num, uint64_t fp)
     idt[num].zero2 = 0;
 }
 
+/* Add all the IRQs here */
 void register_all_irqs()
 {
    register_irq(MASTER_PIC_OFFSET + TIMER_IRQ, (uint64_t)_isr_timer);

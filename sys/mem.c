@@ -51,8 +51,6 @@ void init_mem(uint32_t *modulep, void* kernmem, void *physbase, void *physfree){
 
   /* Making the last addressable memory 4K aligned*/
   last_physaddr = (last_access_mem/PAGE_SIZE)*PAGE_SIZE;
-  //kprintf("physfree %p\n", (uint64_t)physfree);
-  //kprintf("Highest physaddr %p\n", (uint64_t)last_physaddr);
 
   /* The page descriptors start at start_pd*/ 
   start_pd = (mem_pd*)(KERNEL_BASE + (uint64_t)physfree);
@@ -119,24 +117,20 @@ void init_mem(uint32_t *modulep, void* kernmem, void *physbase, void *physfree){
 
   head_freepd = start_pd[kernel_pages-1].next;
 
-  //kprintf("invalid_count - %d, next_zero_count - %d\n", invalid_count, next_zero_count);
-  //kprintf("page descriptor entries - %d\n", pd_entries);
-  //kprintf("kernmem - %p\n", kernmem);
-  //kprintf("pd pages - %d\n", pd_pages);
-  //kprintf("kernel pages - %d\n", kernel_pages);
-  //kprintf("head_freepd - %p\n", head_freepd);
-  //kprintf("head_freepd index - %d\n", (head_freepd-start_pd));
 
   uint64_t* pml4 = (uint64_t*) _get_page();
   kernel_pml4 = pml4;
   clear_page(pml4);
 
+
+  /* Create page table mappings so that the kernel can access
+   * all the physical memory. We're doing identity mapping here.
+   * Also, there is a limit of 2 GB physical memory that the kernel
+   * can access.*/
   create_page_tables(KERNEL_BASE, 
                      KERNEL_BASE + last_physaddr - 1,
-                     //KERNEL_BASE + (1 << 30) - 1,
-                     //KERNEL_BASE + (kernel_pages*PAGE_SIZE) + (100*PAGE_SIZE) - 1,
                      0, pml4, PG_U|PG_P|PG_RW);
-  //kprintf("Done creating page tables\n");
+
    __asm__ __volatile__("movq %0, %%cr3"
                          : 
                          : "r"(PHYS_ADDR((uint64_t)(pml4))));
@@ -296,6 +290,11 @@ void clear_page(void* ptr)
        *p = 0;
 }
 
+
+/*
+ * Free the entire memory allocated to the task inside page tables
+ * and the actual pages that back them.
+ */
 void destroy_address_space(task* t)
 {
    
@@ -339,6 +338,11 @@ void destroy_address_space(task* t)
    }
 }
 
+
+/* Creates a copy of page tables from parent task to child task.
+ * We don't copy the 511-entry of pml4 since it is shared among
+ * all the tasks.
+ */
 uint64_t copy_page_tables(task* child, task* parent)
 {
    uint64_t* parent_cr3 = (uint64_t*) VIRT_ADDR(parent->reg_cr3);
@@ -464,31 +468,23 @@ void create_page_table_entry(uint64_t logical_address,
  
    // we should check if already this entry is present in the pml4 table
    // can verfiy that by checking the last 2 bits of that entry
-   if(((pml4[pml4_entry] & PG_P) == PG_P) 
-      /*&&
-      ((pml4[pml4_entry] & PG_RW) == PG_RW)*/)
+   if((pml4[pml4_entry] & PG_P) == PG_P)
    {
       uint64_t* pdp = (uint64_t*) VIRT_ADDR(CL12(pml4[pml4_entry]));
       uint64_t pdp_entry = PDP_INDEX(logical_address);
       
-      if(((pdp[pdp_entry] & PG_P) == PG_P) 
-         /*&&
-         ((pdp[pdp_entry] & PG_RW) == PG_RW)*/)
+      if((pdp[pdp_entry] & PG_P) == PG_P)
       {
          uint64_t* pd = (uint64_t *) VIRT_ADDR(CL12(pdp[pdp_entry]));
          uint64_t pd_entry = PD_INDEX(logical_address);
          
-         if(((pd[pd_entry] & PG_P) == PG_P) 
-            /* &&
-            ((pd[pd_entry] & PG_RW) == PG_RW)*/)
+         if((pd[pd_entry] & PG_P) == PG_P) 
          {
             uint64_t* pt = (uint64_t *) VIRT_ADDR(CL12(pd[pd_entry]));
             uint64_t pt_entry = PT_INDEX(logical_address);
             
             /* COW case, we may have to update physical address and/or flags */
-            if(((pt[pt_entry] & PG_P) == PG_P) 
-               /*&&
-               ((pt[pt_entry] & PG_RW) == PG_RW)*/)
+            if((pt[pt_entry] & PG_P) == PG_P)
             {
                //kprintf("COW update %p\n", logical_address);
                pt[pt_entry] = (uint64_t)physical_address;

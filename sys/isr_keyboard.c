@@ -198,10 +198,8 @@ void isr_keyboard()
       
       // if backspace is pressed, we go ahead and send that to kprintf
       // kprintf handles that backspace
-//      if(c == 0x0E)
       if(c == 0x0E || c == 0x53)
       {
-         //kprintf("backsapce!");
          printChar(c);
       }
 
@@ -246,7 +244,5 @@ void isr_keyboard()
    }
 
 end:
-   //pic_irq_clear_mask(TIMER_IRQ | KEYBOARD_IRQ);
-   //pic_irq_clear_mask(KEYBOARD_IRQ);
    picack(KEYBOARD_IRQ); 
 }

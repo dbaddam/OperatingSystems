@@ -4,18 +4,11 @@
 .align 8
 #.external cur_task
 
-#TODOKISHAN - Should we save other registers as well?
-# Also rax is supposed to have the return value. We shouldn't
-# pop it at the end.
-# The message in OSDev is 'All registers, except rcx and r11 
-# (and the return value, rax), are preserved during the syscall.'
-
 
 # Hack - I'll be using r14, r15 to swap user/kernel stack here
 # I have added them as clobber registers during syscall so, we
 # can use them here and not restore them. 
 _syscall_entry:
-   #cli
    # Swap the stack
    movq %rsp, %r14
    movq cur_task, %r15
@@ -51,5 +44,4 @@ _syscall_entry:
    popq %rcx
    popq %r14
    movq %r14, %rsp
-   #sti
    sysretq

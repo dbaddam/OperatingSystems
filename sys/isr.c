@@ -30,14 +30,16 @@ void flush_tlb()
                          : "rax");
 }
 
+/* ISR for page fault.
+ *   eno - Page fault error type
+ *   cr2 - Address on which the fault occured
+ */
 void isr_page_fault(uint64_t eno, uint64_t cr2)
 {
    task *t = cur_task;
    vma  *p = &t->mm_struct;
-   //vma  *lastp; 
    int   i;
-   // Skip the dummy entry
-   //lastp = p;
+
    p = p->next;
    while (p != NULL)
    {
@@ -64,7 +66,6 @@ void isr_page_fault(uint64_t eno, uint64_t cr2)
                 }
                 else
                 {
-                   //kprintf("COW %d, %p\n",cur_task->pid, vaddr);
                    uint64_t new_page = (uint64_t) _get_page();
                    memcpy((char*)new_page, (char*)old_page, PAGE_SIZE);
 
@@ -90,7 +91,6 @@ void isr_page_fault(uint64_t eno, uint64_t cr2)
                 /* All the following complicated code is because elf64 sections
                  * need not be page aligned and fsize is different from msize */
 
-                //kprintf("Instruction fetch,");
                 uint64_t new_page = (uint64_t) _get_page();
                 char* cur_start_vaddr = (char*) ADDR_FLOOR(vaddr);
                 char* content = (char*)p->node.fstart;      // Content starts here
@@ -125,11 +125,9 @@ void isr_page_fault(uint64_t eno, uint64_t cr2)
          flush_tlb();
          return;
       }
-      //lastp = p;
       p = p->next;
    }
 
-   //print_vmas();
    kprintf("Segmentation fault\n");
    exit(-1);
    //ERROR("Invalid Page fault erno - %p, cr2 - %p", eno, cr2);
