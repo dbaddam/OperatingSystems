@@ -65,5 +65,10 @@ int closedir(DIR *dirp)
    }
 }
 
+int getdents(unsigned int fd, struct linux_dirent *dirp, unsigned int count)
+{
+   syscall3(getdents, fd, dirp, count);
+   return (int)sysret;
+}
 
  
